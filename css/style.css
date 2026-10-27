@@ -443,3 +443,5 @@ article h4{font:600 15px var(--sans);margin:18px 0 4px;color:var(--c);text-trans
 .page-head .crumbs{margin-bottom:6px}
 .unit-h{display:flex;align-items:baseline;gap:10px;font:600 15px var(--sans);margin:28px 0 12px;color:var(--muted)}
 .unit-h b{color:var(--c);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+
+.seg.wrap{flex-wrap:wrap;height:auto;border-radius:16px}
