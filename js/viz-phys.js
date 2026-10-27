@@ -392,4 +392,44 @@
       if (txt !== last) { out.innerHTML = txt; last = txt; }
     });
   };
+
+  // ---------- Lenses: shared canvas ray-diagram drawer ----------
+  function lensScene(ctx, W, H, u, f, col, opts = {}) {
+    const ax = H * .55, Lx = W * .45, h = Math.min(60, H * .22), ink = cs("--ink"), mut = cs("--muted"), b = cs("--maths"), r = cs("--bad");
+    ctx.strokeStyle = mut; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(10, ax); ctx.lineTo(W - 10, ax); ctx.stroke();
+    // lens
+    ctx.strokeStyle = b; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(Lx, ax, 9, H * .42, 0, 0, 7); ctx.stroke(); ctx.fillStyle = b + "22"; ctx.fill();
+    [-1, 1].forEach(sg => { dot(ctx, Lx + sg * f, ax, 4, ink); text(ctx, "F", Lx + sg * f, ax + 18, { size: 12, align: "center", weight: 700 }); dot(ctx, Lx + sg * 2 * f, ax, 3, mut); text(ctx, "2F", Lx + sg * 2 * f, ax + 18, { size: 11, align: "center", color: mut }); });
+    const ox = Lx - u, oy = ax - h; arrow(ctx, ox, ax, ox, oy, col, 3); text(ctx, "object", ox, ax + 32, { size: 11, align: "center", color: col, weight: 600 });
+    const line = (x1, y1, x2, y2, c, dash) => { ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.setLineDash(dash ? [5, 5] : []); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]); };
+    const ext = (x1, y1, x2, y2, toX) => [toX, y1 + (y2 - y1) * (toX - x1) / (x2 - x1)];
+    const real = u > f + .5, v = u * f / (u - f), hi = -h * v / u;
+    // ray 1: parallel then through far F
+    line(ox, oy, Lx, oy, r); let e = ext(Lx, oy, Lx + f, ax, W - 10); line(Lx, oy, e[0], e[1], r);
+    // ray 2: through centre
+    e = ext(ox, oy, Lx, ax, W - 10); line(ox, oy, e[0], e[1], cs("--chem"));
+    // ray 3: through near F then parallel (only if object beyond F)
+    if (real) { const yl = ax + (oy - ax) * (Lx - (Lx - f)) / (ox - (Lx - f)); line(ox, oy, Lx, yl, ink); line(Lx, yl, W - 10, yl, ink); }
+    if (real && Lx + v < W - 10) { arrow(ctx, Lx + v, ax, Lx + v, ax - hi, ink, 3); text(ctx, "real image", Lx + v + 6, ax - hi + 16, { size: 11, weight: 700 }); }
+    if (!real && u < f - .5) { const vx = Lx + v; line(Lx, oy, vx, ax - hi, mut, true); line(Lx, ax, vx, ax - hi, mut, true); arrow(ctx, vx, ax, vx, ax - hi, mut, 3); text(ctx, "virtual image", vx, ax - hi - 10, { size: 11, align: "center", color: mut, weight: 700 }); }
+    return { real, v, m: Math.abs(v / u), up: !real };
+  }
+  V.lensMove = (host) => mount(host, (ctx, W, H, t, P) => {
+    const f = Math.min(80, W * .1), k = (Math.cos(t / P * Math.PI * 2) + 1) / 2, u = f * .55 + k * (W * .45 - 30 - f * .55);
+    const res = lensScene(ctx, W, H, u, f, cs("--physics"));
+    const d = u > 2 * f + 2 ? "beyond 2F: real, inverted, diminished (camera, eye)" : Math.abs(u - 2 * f) <= 2 ? "at 2F: real, inverted, same size" : u > f + 2 ? "between F and 2F: real, inverted, enlarged (projector)" : Math.abs(u - f) <= 2 ? "at F: no image (rays parallel)" : "inside F: virtual, upright, enlarged (magnifying glass)";
+    text(ctx, "Object " + d, 16, 22, { size: 13, weight: 600 });
+  }, { h: 330, period: 16, caption: "Move the object closer to the lens and watch the image change" });
+
+  DEMOS.lens = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 320);
+    const v = controls(root, [{ key: "u", label: "object distance (cm)", min: 4, max: 40, step: 0.5, value: 24 }, { key: "f", label: "focal length (cm)", min: 6, max: 14, step: 1, value: 10 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const sc = Math.min(8, (w * .45 - 20) / 40), res = lensScene(ctx, w, h, v.u * sc, v.f * sc, col);
+      const vv = v.u * v.f / (v.u - v.f), m = Math.abs(vv / v.u);
+      const desc = Math.abs(v.u - v.f) < .01 ? "The object is at the focal point: the rays leave parallel and no image forms." : res.real ? `Real, inverted image ${fix(vv, 1)} cm behind the lens, magnification ${fix(m, 2)} (${m > 1.02 ? "enlarged" : m < .98 ? "diminished" : "same size"}). You could catch it on a screen.` : `Virtual, upright, enlarged image (×${fix(m, 2)}) on the same side as the object. The rays never actually meet: your eye traces them back. This is a magnifying glass.`;
+      if (desc !== last) { out.innerHTML = desc; last = desc; }
+    });
+  };
 })();
