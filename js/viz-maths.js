@@ -237,5 +237,60 @@
     });
   };
 
+  // ---------- Tangent sliding along a curve; gradient readout ----------
+  V.tangentGradient = (host) => mount(host, (ctx, W, H, t, P) => {
+    const f = x => .25 * x * x * x - 1.5 * x + 1, df = x => .75 * x * x - 1.5, x0 = -3, x1 = 3, gx = 40, gw = W - 80, gy = 20, gh = H - 60;
+    const X = x => gx + (x - x0) / (x1 - x0) * gw, Y = y => gy + gh / 2 - y * gh / 9;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, Y(0)); ctx.lineTo(gx + gw, Y(0)); ctx.moveTo(X(0), gy); ctx.lineTo(X(0), gy + gh); ctx.stroke();
+    ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 3; ctx.beginPath(); for (let x = x0; x <= x1; x += .02) x === x0 ? ctx.moveTo(X(x), Y(f(x))) : ctx.lineTo(X(x), Y(f(x))); ctx.stroke();
+    const a = -2.6 + 5.2 * (.5 - .5 * Math.cos(t / P * 2 * Math.PI)), m = df(a), L = 1.1;
+    ctx.save(); ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip(); ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X(a - L), Y(f(a) - m * L)); ctx.lineTo(X(a + L), Y(f(a) + m * L)); ctx.stroke(); ctx.restore();
+    // rise/run triangle
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(a), Y(f(a))); ctx.lineTo(X(a + 1), Y(f(a))); ctx.lineTo(X(a + 1), Y(f(a) + m)); ctx.stroke(); ctx.setLineDash([]);
+    dot(ctx, X(a), Y(f(a)), 6, cs("--bad"));
+    text(ctx, `gradient of tangent at x = ${a.toFixed(1)}: ${m.toFixed(2)}`, 16, H - 14, { size: 14, weight: 700, color: Math.abs(m) < .12 ? cs("--good") : cs("--bad") });
+    if (Math.abs(m) < .12) text(ctx, "turning point: gradient 0", W - 16, H - 14, { size: 13, align: "right", weight: 700, color: cs("--good") });
+  }, { h: 300, period: 12, caption: "The gradient of a curve at a point is the gradient of the tangent there" });
+
+  // ---------- Area under a speed–time graph ----------
+  V.speedArea = (host) => mount(host, (ctx, W, H, t, P) => {
+    const pts = [[0, 0], [10, 20], [30, 20], [40, 0]], gx = 50, gw = W - 90, gy = 24, gh = H - 70, X = s => gx + s / 40 * gw, Y = v => gy + gh - v / 25 * gh;
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+    text(ctx, "time / s", gx + gw, gy + gh + 30, { size: 12, align: "right", color: cs("--muted") }); text(ctx, "speed / m/s", gx + 6, gy + 4, { size: 12, color: cs("--muted") });
+    [10, 20, 30, 40].forEach(s => text(ctx, String(s), X(s), gy + gh + 16, { size: 11, align: "center", color: cs("--muted") })); text(ctx, "20", gx - 8, Y(20) + 4, { size: 11, align: "right", color: cs("--muted") });
+    const k = seg(t, .5, 4), fill = [[0, 10, cs("--maths"), "½ × 10 × 20 = 100"], [10, 30, cs("--chem"), "20 × 20 = 400"], [30, 40, cs("--physics"), "½ × 10 × 20 = 100"]];
+    fill.forEach(([a, b, c, lab], i) => { const kk = clamp(k * 3 - i); if (kk <= 0) return; alpha(ctx, kk, () => { ctx.fillStyle = c + "44"; ctx.beginPath(); ctx.moveTo(X(a), Y(0)); const va = a === 0 ? 0 : 20, vb = b === 40 ? 0 : 20; ctx.lineTo(X(a), Y(va)); ctx.lineTo(X(b), Y(vb)); ctx.lineTo(X(b), Y(0)); ctx.fill(); text(ctx, lab, X((a + b) / 2), Y(8), { size: 12, align: "center", weight: 700 }); }); });
+    ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 3; ctx.beginPath(); pts.forEach(([s, v], i) => i ? ctx.lineTo(X(s), Y(v)) : ctx.moveTo(X(s), Y(v))); ctx.stroke();
+    if (k > .99) text(ctx, "total distance = area = 600 m", W / 2, gy + 6, { size: 15, align: "center", weight: 700, color: cs("--maths") });
+    text(ctx, "acceleration = gradient = 20 ÷ 10 = 2 m/s²", X(5) - 20, Y(22) - 4, { size: 11, color: cs("--bad") });
+  }, { h: 280, period: 8, caption: "On a speed–time graph, gradient = acceleration and area = distance travelled" });
+
+  // ---------- Interactive: function grapher with a line to solve equations ----------
+  DEMOS.funcGraph = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 330);
+    const fam = [["cubic ax³ + bx² + cx + d", (x, p) => p.a * x ** 3 + p.b * x * x + p.c * x + p.d], ["quadratic ax² + bx + c", (x, p) => p.a * x * x + p.b * x + p.c], ["reciprocal a/x + b", (x, p) => p.a / x + p.b], ["exponential a × bˣ", (x, p) => p.a * Math.pow(Math.max(.1, p.b), x)]]; let fi = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = fam.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; fi = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const p = DEMOS._lib.controls(root, [{ key: "a", label: "a", min: -3, max: 3, step: .5, value: 1 }, { key: "b", label: "b", min: -4, max: 4, step: .5, value: 0 }, { key: "c", label: "c", min: -6, max: 6, step: 1, value: -4 }, { key: "d", label: "d", min: -6, max: 6, step: 1, value: 0 }, { key: "m", label: "line: gradient m", min: -4, max: 4, step: .5, value: 0 }, { key: "k", label: "line: intercept", min: -8, max: 8, step: 1, value: 1 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const f = x => fam[fi][1](x, p), sx = w / 10, sy = h / 20, ox = w / 2, oy = h / 2, X = x => ox + x * sx, Y = y => oy - y * sy;
+      ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; for (let i = -5; i <= 5; i++) { ctx.beginPath(); ctx.moveTo(X(i), 0); ctx.lineTo(X(i), h); ctx.stroke(); } for (let j = -10; j <= 10; j += 2) { ctx.beginPath(); ctx.moveTo(0, Y(j)); ctx.lineTo(w, Y(j)); ctx.stroke(); }
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke();
+      for (let i = -4; i <= 4; i++) if (i) text(ctx, String(i), X(i), oy + 14, { size: 10, align: "center", color: css("--muted") });
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); let pen = false;
+      for (let x = -5; x <= 5; x += .01) { const y = f(x); if (!isFinite(y) || Math.abs(y) > 40 || (fi === 2 && Math.abs(x) < .02)) { pen = false; continue; } pen ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); pen = true; } ctx.stroke();
+      const g = x => p.m * x + p.k; ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.moveTo(X(-5), Y(g(-5))); ctx.lineTo(X(5), Y(g(5))); ctx.stroke(); ctx.setLineDash([]);
+      const roots = []; let prev = f(-5) - g(-5);
+      for (let x = -5 + .005; x <= 5; x += .005) { const cur = f(x) - g(x); if (isFinite(cur) && isFinite(prev) && Math.sign(cur) !== Math.sign(prev) && Math.abs(cur - prev) < 5) { let lo = x - .005, hi = x; for (let it = 0; it < 30; it++) { const mid = (lo + hi) / 2; Math.sign(f(mid) - g(mid)) === Math.sign(f(lo) - g(lo)) ? lo = mid : hi = mid; } roots.push((lo + hi) / 2); } prev = cur; }
+      roots.forEach(r => { dot(ctx, X(r), Y(g(r)), 6, css("--bad")); ctx.setLineDash([3, 3]); ctx.strokeStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(X(r), Y(g(r))); ctx.lineTo(X(r), oy); ctx.stroke(); ctx.setLineDash([]); });
+      const fmt = n => (Math.round(n * 100) / 100).toString();
+      const msg = `The curve meets the line y = ${fmt(p.m)}x ${p.k < 0 ? "− " + fmt(-p.k) : "+ " + fmt(p.k)} at <b>x = ${roots.length ? roots.map(fmt).join(", ") : "nowhere in view"}</b>. These x-values solve the equation <i>curve = line</i>. ${fi === 0 ? "A cubic can cross a line up to 3 times." : fi === 2 ? "Reciprocal graphs have asymptotes: x = 0 and y = b." : fi === 3 ? "Exponential graphs have the x-axis as an asymptote (when there is no constant added)." : ""}`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
