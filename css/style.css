@@ -297,3 +297,39 @@ footer{margin:96px auto 40px;color:var(--muted);font-size:13px;text-align:center
 
 @media print{header.top,.filters,footer,body::before{display:none}.reveal{opacity:1;transform:none}.formula{break-inside:avoid}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+/* ============ Static diagrams (js/figs.js) ============ */
+.fig{margin:22px 0;padding:16px 16px 12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:620px;box-shadow:var(--shadow)}
+.fig.wide{max-width:780px}.fig.small{max-width:400px}.fig.tiny{max-width:300px}
+.fig > svg{display:block;width:100%;height:auto;overflow:visible}
+.fig figcaption{font:italic 15px/1.5 var(--serif);color:var(--muted);margin-top:10px}
+.fig-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;max-width:780px;margin:22px 0}
+.fig-row .fig{margin:0;max-width:none}
+.fig > svg :is(line,path,polyline,polygon,circle,rect,ellipse){fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fig .k{stroke:var(--ink)}.fig .m{stroke:var(--muted)}.fig .c{stroke:var(--c)}.fig .b{stroke:var(--maths)}.fig .o{stroke:var(--physics)}.fig .g{stroke:var(--chem)}.fig .r{stroke:var(--bad)}
+.fig .kF{fill:var(--ink);stroke:none}.fig .mF{fill:var(--muted);stroke:none}.fig .cF{fill:var(--c);stroke:none}.fig .bF{fill:var(--maths);stroke:none}.fig .oF{fill:var(--physics);stroke:none}.fig .gF{fill:var(--chem);stroke:none}.fig .rF{fill:var(--bad);stroke:none}
+.fig .cS{fill:color-mix(in srgb,var(--c) 16%,transparent)}.fig .bS{fill:color-mix(in srgb,var(--maths) 16%,transparent)}.fig .oS{fill:color-mix(in srgb,var(--physics) 16%,transparent)}.fig .gS{fill:color-mix(in srgb,var(--chem) 16%,transparent)}.fig .mS{fill:color-mix(in srgb,var(--muted) 14%,transparent)}.fig .rS{fill:color-mix(in srgb,var(--bad) 14%,transparent)}
+.fig .bgF{fill:var(--surface)}.fig .nostroke{stroke:none}
+.fig .thin{stroke-width:1.3}.fig .mid{stroke-width:2.2}.fig .thick{stroke-width:3.2}.fig .wire{stroke-width:2}.fig .d{stroke-dasharray:6 5}.fig .grid{stroke:var(--line);stroke-width:1}
+.fig > svg text{font:500 14px var(--sans);fill:var(--ink);stroke:none}
+.fig .small{font-size:12.5px}.fig .big{font-size:18px}.fig .bold{font-weight:700}.fig .serif{font-family:var(--serif)}.fig .it{font-style:italic}
+.fig .tk{fill:var(--ink)}.fig .tm{fill:var(--muted)}.fig .tc{fill:var(--c)}.fig .tb{fill:var(--maths)}.fig .to{fill:var(--physics)}.fig .tg{fill:var(--chem)}.fig .tr{fill:var(--bad)}
+
+/* in-text blocks */
+details.check{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:12px 16px;margin:18px 0;background:var(--surface);max-width:68ch}
+details.check summary{cursor:pointer;font-weight:500;list-style:none}
+details.check summary::-webkit-details-marker{display:none}
+details.check summary::before{content:"Check yourself";display:block;font:600 11px var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--c);margin-bottom:4px}
+details.check summary::after{content:"Tap to reveal answer ↓";display:block;font-size:13px;color:var(--muted);margin-top:4px}
+details.check[open] summary::after{content:"Answer"}
+details.check > div{margin-top:8px;padding-top:10px;border-top:1px dashed var(--line);animation:rise .4s var(--ease)}
+.callout.ex{--cc:var(--c)}
+.callout.ex b.t::before{content:"✎ "}
+.callout.exam{--cc:var(--good)}
+.callout.exam b.t::before{content:"✓ "}
+.callout.why{--cc:var(--maths)}
+article .lead{font-size:18px;color:var(--ink);max-width:66ch}
+article h4{font:600 15px var(--sans);margin:18px 0 4px;color:var(--c);text-transform:uppercase;letter-spacing:.05em}
+.steps-inline{counter-reset:s;list-style:none;padding:0}
+.steps-inline li{counter-increment:s;position:relative;padding-left:36px;margin:10px 0}
+.steps-inline li::before{content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--c);color:var(--accent-ink);font:700 12px/24px var(--sans);text-align:center}
