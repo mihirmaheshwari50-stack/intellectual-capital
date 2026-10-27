@@ -337,5 +337,85 @@
     });
   };
 
+  // ---------- Angle facts animated: angles on a line, around a point, vertically opposite ----------
+  V.angleFacts = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = (t / P) % 1, phase = Math.floor(k * 3), lk = seg(t, 0, .9);
+    const cx = W / 2, cy = H / 2 + 10, r = 70;
+    if (phase === 0) { const a1 = 35 + 110 * lk; ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + r * Math.cos(-a1 * Math.PI / 180), cy + r * Math.sin(-a1 * Math.PI / 180)); ctx.stroke();
+      ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.arc(cx, cy, 30, -a1 * Math.PI / 180, 0); ctx.stroke(); ctx.strokeStyle = cs("--chem"); ctx.beginPath(); ctx.arc(cx, cy, 30, Math.PI, -a1 * Math.PI / 180, true); ctx.stroke();
+      text(ctx, Math.round(a1) + "°", cx + 40, cy - 18, { size: 14, weight: 700, color: cs("--maths") }); text(ctx, Math.round(180 - a1) + "°", cx - 50, cy - 18, { size: 14, weight: 700, color: cs("--chem") });
+      text(ctx, "angles on a straight line sum to 180°", cx, cy + 90, { size: 14, align: "center", weight: 700 }); }
+    else if (phase === 1) { const n = 3, angs = [60, 140, 160]; let a0 = -90;
+      angs.forEach((a, i) => { const a1 = a0 + a * lk, col = [cs("--maths"), cs("--chem"), cs("--physics")][i];
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + r * Math.cos(a0 * Math.PI / 180), cy + r * Math.sin(a0 * Math.PI / 180)); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 26 + i * 10, a0 * Math.PI / 180, a1 * Math.PI / 180); ctx.stroke(); text(ctx, Math.round(a) + "°", cx + (40 + i * 14) * Math.cos((a0 + a / 2) * Math.PI / 180), cy + (40 + i * 14) * Math.sin((a0 + a / 2) * Math.PI / 180), { size: 13, align: "center", weight: 700, color: col }); a0 += a; });
+      ctx.strokeStyle = cs("--ink"); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + r * Math.cos(a0 * Math.PI / 180), cy + r * Math.sin(a0 * Math.PI / 180)); ctx.stroke();
+      text(ctx, "angles around a point sum to 360°", cx, cy + 90, { size: 14, align: "center", weight: 700 }); }
+    else { const a = 40, ext = 65 * lk; ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; [0, 90, 180, 270].forEach(() => {});
+      [a, a + 180].forEach((ang, i) => { ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.moveTo(cx - r * Math.cos(ang * Math.PI / 180), cy - r * Math.sin(ang * Math.PI / 180)); ctx.lineTo(cx + r * Math.cos(ang * Math.PI / 180), cy + r * Math.sin(ang * Math.PI / 180)); ctx.stroke(); });
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(-ext * Math.PI / 180 * .3);
+      [a, a + 180].forEach((ang) => { ctx.strokeStyle = cs("--chem"); ctx.beginPath(); ctx.moveTo(-r * Math.cos(ang * Math.PI / 180), -r * Math.sin(ang * Math.PI / 180)); ctx.lineTo(r * Math.cos(ang * Math.PI / 180), r * Math.sin(ang * Math.PI / 180)); ctx.stroke(); });
+      ctx.restore();
+      ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.arc(cx, cy, 26, -a * Math.PI / 180, 0); ctx.stroke();
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI); ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.arc(0, 0, 26, -a * Math.PI / 180, 0); ctx.stroke(); ctx.restore();
+      text(ctx, "vertically opposite angles are equal", cx, cy + 90, { size: 14, align: "center", weight: 700 }); }
+  }, { h: 220, period: 7.5, caption: "Three basic angle facts, each proved by angles on a line or around a point" });
+
+  // ---------- Interior angle sum: triangulating a polygon ----------
+  V.polygonSum = (host) => mount(host, (ctx, W, H, t, P) => {
+    const n = 2 + Math.min(6, 1 + Math.floor(t / (P / 6.3))), cx = W / 2, cy = H / 2 + 6, r = Math.min(100, H / 2 - 40);
+    const pts = Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; });
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke();
+    for (let i = 2; i < n - 1; i++) { ctx.strokeStyle = cs("--maths") + "88"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(...pts[0]); ctx.lineTo(...pts[i]); ctx.stroke(); ctx.setLineDash([]); }
+    text(ctx, `${n}-sided polygon → ${n - 2} triangles`, cx, H - 20, { size: 14, align: "center", weight: 700 });
+    text(ctx, `sum of interior angles = ${n - 2} × 180° = ${(n - 2) * 180}°`, cx, H - 2, { size: 13, align: "center", weight: 700, color: cs("--maths") });
+  }, { h: 260, period: 7, caption: "Splitting a polygon into triangles from one vertex gives (n − 2) triangles" });
+
+  // ---------- Interactive: construction steps (perpendicular bisector / angle bisector) ----------
+  DEMOS.construct = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const T = ["Perpendicular bisector of a line", "Angle bisector", "Perpendicular from a point to a line", "Triangle from 3 sides (SSS)"]; let ty = 0, step = 0, t0 = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = T.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; step = 0; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const bar = document.createElement("div"); bar.style.cssText = "display:flex;gap:8px;margin-top:10px"; bar.innerHTML = `<button class="btn small" data-a="next">Next step</button><button class="btn ghost small" data-a="reset">Restart</button>`;
+    bar.onclick = e => { const a = e.target.closest("[data-a]")?.dataset.a; if (a === "next") step = Math.min(4, step + 1); if (a === "reset") step = 0; };
+    root.appendChild(bar); const out = readout(root); let last = "";
+    const arcAt = (x, y, r, a0, a1) => { ctx.strokeStyle = css("--maths"); ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(x, y, r, a0, a1); ctx.stroke(); };
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); ctx.lineWidth = 2;
+      const DESC = [
+        ["Start with line segment AB.", "Open compasses to more than half of AB.", "Draw arcs from A and from B, above and below the line, so they cross at two points.", "Join the two crossing points with a straight line.", "This line is the perpendicular bisector: every point on it is equidistant from A and B."],
+        ["Start with angle ABC (vertex B).", "Draw an arc centred at B crossing both arms, at P and Q.", "Open compasses to a fixed radius; draw arcs from P and from Q so they cross at X.", "Join B to X with a straight line.", "BX bisects angle ABC exactly in half."],
+        ["Start with point P and line AB (P not on the line).", "Draw an arc centred at P crossing the line at two points, X and Y.", "From X and Y, with the same radius, draw arcs that cross at Q (on the other side).", "Join P to Q with a straight line.", "PQ is perpendicular to AB and passes through P."],
+        ["Given three side lengths to construct a triangle.", "Draw the base to its correct length using a ruler.", "Open compasses to the second side's length; draw an arc from one end of the base.", "Open compasses to the third side's length; draw an arc from the other end — they cross at the apex.", "Join both ends of the base to the crossing point: the triangle is complete."]
+      ][ty];
+      const Ax = w * .25, Ay = h * .55, Bx = w * .72, By = h * .55;
+      if (ty === 0) { ctx.strokeStyle = css("--ink"); ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.stroke(); dot(ctx, Ax, Ay, 3, css("--ink")); dot(ctx, Bx, By, 3, css("--ink")); text(ctx, "A", Ax - 14, Ay + 4, { size: 13 }); text(ctx, "B", Bx + 10, By + 4, { size: 13 });
+        const rad = Math.hypot(Bx - Ax, By - Ay) * .62;
+        if (step >= 2) { arcAt(Ax, Ay, rad, -1.3, 1.3); arcAt(Bx, By, rad, Math.PI - 1.3, Math.PI + 1.3); }
+        const mx = (Ax + Bx) / 2, dy2 = Math.sqrt(Math.max(0, rad * rad - ((Bx - Ax) / 2) ** 2));
+        if (step >= 2) { dot(ctx, mx, Ay - dy2, 4, css("--maths")); dot(ctx, mx, Ay + dy2, 4, css("--maths")); }
+        if (step >= 3) { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(mx, Ay - dy2 - 10); ctx.lineTo(mx, Ay + dy2 + 10); ctx.stroke(); } }
+      else if (ty === 1) { const Vx = w * .25, Vy = h * .75; ctx.strokeStyle = css("--ink"); ctx.beginPath(); ctx.moveTo(Vx, Vy); ctx.lineTo(Vx + 220, Vy); ctx.lineTo(Vx + 160, Vy - 160); ctx.stroke(); text(ctx, "B", Vx - 14, Vy + 4, { size: 13 }); text(ctx, "C", Vx + 230, Vy + 4, { size: 13 }); text(ctx, "A", Vx + 168, Vy - 170, { size: 13 });
+        if (step >= 1) { arcAt(Vx, Vy, 60, 0, -Math.atan2(160, 160)); dot(ctx, Vx + 60, Vy, 3, css("--maths")); dot(ctx, Vx + 60 * Math.cos(Math.atan2(160, 160)), Vy - 60 * Math.sin(Math.atan2(160, 160)), 3, css("--maths")); }
+        const p1 = [Vx + 60, Vy], ang = Math.atan2(160, 160), p2 = [Vx + 60 * Math.cos(ang), Vy - 60 * Math.sin(ang)];
+        if (step >= 2) { arcAt(...p1, 70, 0, 2 * Math.PI); arcAt(...p2, 70, 0, 2 * Math.PI); }
+        if (step >= 3) { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Vx, Vy); ctx.lineTo(Vx + 150 * Math.cos(ang / 2), Vy - 150 * Math.sin(ang / 2)); ctx.stroke(); } }
+      else if (ty === 2) { const Ly = h * .3; ctx.strokeStyle = css("--ink"); ctx.beginPath(); ctx.moveTo(w * .15, Ly); ctx.lineTo(w * .85, Ly); ctx.stroke(); const Px = w * .55, Py = h * .78; dot(ctx, Px, Py, 4, css("--ink")); text(ctx, "P", Px + 10, Py, { size: 13 });
+        if (step >= 1) arcAt(Px, Py, Py - Ly + 20, Math.PI * 1.15, Math.PI * 1.85);
+        const half = Math.sqrt(Math.max(0, (Py - Ly + 20) ** 2 - (Py - Ly) ** 2));
+        if (step >= 2) { dot(ctx, Px - half, Ly, 3, css("--maths")); dot(ctx, Px + half, Ly, 3, css("--maths")); arcAt(Px - half, Ly, Py - Ly + 40, -.6, .6); arcAt(Px + half, Ly, Py - Ly + 40, Math.PI - .6, Math.PI + .6); }
+        if (step >= 3) { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Px, Py); ctx.lineTo(Px, Ly - (Py - Ly + 10)); ctx.stroke(); } }
+      else { const bx1 = w * .25, bx2 = w * .72, by = h * .75; ctx.strokeStyle = css("--ink"); ctx.beginPath(); ctx.moveTo(bx1, by); ctx.lineTo(bx2, by); ctx.stroke(); text(ctx, "6 cm", (bx1 + bx2) / 2, by + 18, { size: 12, align: "center" });
+        if (step >= 2) arcAt(bx1, by, 110, -1.5, -0.1);
+        if (step >= 3) arcAt(bx2, by, 90, Math.PI + 0.1, Math.PI + 1.5);
+        const d = bx2 - bx1, apx = (d * d + 110 * 110 - 90 * 90) / (2 * d), apy2 = 110 * 110 - apx * apx;
+        if (step >= 4 && apy2 > 0) { const apY = Math.sqrt(apy2); const X = bx1 + apx, Y = by - apY; ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(bx1, by); ctx.lineTo(X, Y); ctx.lineTo(bx2, by); ctx.stroke(); } }
+      const msg = `<b>Step ${step}/4 — ${T[ty]}:</b> ${DESC[Math.min(step, 4)]}`; if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
