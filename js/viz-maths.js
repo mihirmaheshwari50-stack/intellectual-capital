@@ -417,5 +417,94 @@
     });
   };
 
+  // ---------- Angle at centre = 2x angle at circumference, animated ----------
+  V.circleCentre = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W / 2, cy = H / 2 + 6, r = Math.min(100, H / 2 - 40);
+    const k = seg(t, .4, P - .4), aA = -2.6, aB = -0.5, aC = 2.0 + 1.5 * Math.sin(k * 3.14159);
+    const pt = a => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+    const [Ax, Ay] = pt(aA), [Bx, By] = pt(aB), [Cx, Cy] = pt(aC);
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+    ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(Ax, Ay); ctx.moveTo(cx, cy); ctx.lineTo(Bx, By); ctx.stroke();
+    ctx.strokeStyle = cs("--chem"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Cx, Cy); ctx.lineTo(Ax, Ay); ctx.moveTo(Cx, Cy); ctx.lineTo(Bx, By); ctx.stroke();
+    const angAt = (px, py, a1, a2, rad, col) => { let d = a2 - a1; while (d < 0) d += 2 * Math.PI; while (d > 2 * Math.PI) d -= 2 * Math.PI; ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(px, py, rad, a1, a1 + d); ctx.stroke(); return d; };
+    const angCentre = Math.atan2(By - cy, Bx - cx) - Math.atan2(Ay - cy, Ax - cx);
+    const a0 = Math.atan2(Ay - cy, Ax - cx), a1 = Math.atan2(By - cy, Bx - cx);
+    angAt(cx, cy, a0, a1, 24, cs("--maths"));
+    const cA0 = Math.atan2(Ay - Cy, Ax - Cx), cA1 = Math.atan2(By - Cy, Bx - Cx);
+    angAt(Cx, Cy, cA0, cA1, 20, cs("--chem"));
+    dot(ctx, cx, cy, 3, cs("--ink")); dot(ctx, Ax, Ay, 4, cs("--ink")); dot(ctx, Bx, By, 4, cs("--ink")); dot(ctx, Cx, Cy, 4, cs("--chem"));
+    text(ctx, "A", Ax + 10 * Math.cos(aA), Ay + 10 * Math.sin(aA), { size: 12 }); text(ctx, "B", Bx + 10 * Math.cos(aB), By + 10 * Math.sin(aB), { size: 12 }); text(ctx, "C", Cx + 12 * Math.cos(aC), Cy + 12 * Math.sin(aC), { size: 12, color: cs("--chem") });
+    text(ctx, "angle at centre = 2 × angle at circumference", cx, H - 10, { size: 13, align: "center", weight: 700 });
+  }, { h: 280, period: 8, caption: "As C moves around the major arc, the angle at the circumference stays half the angle at the centre" });
+
+  // ---------- Cyclic quadrilateral: opposite angles sum to 180 ----------
+  V.cyclicQuad = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W / 2, cy = H / 2 + 6, r = Math.min(95, H / 2 - 40);
+    const k = seg(t, .4, P - .4), base = [-2.2, -0.9, 0.6, 2.3], wob = k * 0.9 - 0.45;
+    const angs = [base[0], base[1] + wob * .3, base[2], base[3] - wob * .2];
+    const pts = angs.map(a => [cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+    ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke();
+    const lab = ["A", "B", "C", "D"], col = [cs("--chem"), cs("--physics"), cs("--chem"), cs("--physics")];
+    pts.forEach(([x, y], i) => { dot(ctx, x, y, 4, cs("--ink")); text(ctx, lab[i], x + 12 * Math.cos(angs[i]), y + 12 * Math.sin(angs[i]), { size: 13, weight: 700 }); });
+    const interior = (i) => { const prev = pts[(i + 3) % 4], cur = pts[i], next = pts[(i + 1) % 4]; let a1 = Math.atan2(prev[1] - cur[1], prev[0] - cur[0]), a2 = Math.atan2(next[1] - cur[1], next[0] - cur[0]); let d = a2 - a1; while (d <= -Math.PI) d += 2 * Math.PI; while (d > Math.PI) d -= 2 * Math.PI; return { a1, d: -d }; };
+    [0, 2].forEach(i => { const { a1, d } = interior(i); ctx.strokeStyle = col[i]; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 20, a1, a1 + d, d < 0); ctx.stroke(); });
+    text(ctx, "opposite angles A + C = 180°  (and B + D = 180°)", cx, H - 10, { size: 13, align: "center", weight: 700 });
+  }, { h: 280, period: 7, caption: "A cyclic quadrilateral has all four vertices on the circle: opposite angles are supplementary" });
+
+  // ---------- Interactive: circle theorem explorer ----------
+  DEMOS.circleTheorem = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 340);
+    const T = ["Angle in semicircle", "Tangent ⟂ radius", "Two tangents equal", "Angles same segment", "Alternate segment"]; let ty = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = T.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const v = DEMOS._lib.controls(root, [{ key: "p", label: "point position", min: 0, max: 100, step: 1, value: 50 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 50, k = v.p / 100;
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke(); dot(ctx, cx, cy, 2.5, css("--muted"));
+      const P = a => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+      let msg = "";
+      if (ty === 0) { const [Ax, Ay] = P(Math.PI), [Bx, By] = P(0), a = Math.PI * .15 + k * Math.PI * .7, [Cx, Cy] = P(-a);
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.stroke();
+        ctx.strokeStyle = css("--chem"); ctx.beginPath(); ctx.moveTo(Cx, Cy); ctx.lineTo(Ax, Ay); ctx.moveTo(Cx, Cy); ctx.lineTo(Bx, By); ctx.stroke();
+        const ang = 90; ctx.strokeStyle = css("--chem"); ctx.beginPath(); ctx.rect(Cx - 10 * Math.sign(Math.cos(-a)), Cy - 10, 10 * Math.sign(Math.cos(-a)), 10); ctx.stroke();
+        text(ctx, "A", Ax - 14, Ay, { size: 13 }); text(ctx, "B", Bx + 10, By, { size: 13 }); text(ctx, "C", Cx, Cy - 14, { size: 13, color: css("--chem") }); text(ctx, "AB is a diameter", cx, cy + r + 30, { size: 12, align: "center", color: css("--muted") });
+        msg = `<b>Angle in a semicircle = 90°.</b> AB is a diameter, so angle ACB is always a right angle, wherever C is on the circle.`; }
+      else if (ty === 1) { const a = k * 2 * Math.PI, [Tx, Ty] = P(a), tx = -Math.sin(a), ty2 = Math.cos(a);
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(Tx, Ty); ctx.stroke();
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Tx - tx * 90, Ty - ty2 * 90); ctx.lineTo(Tx + tx * 90, Ty + ty2 * 90); ctx.stroke();
+        const sx = Math.sign(Math.cos(a)) || 1, sy = Math.sign(Math.sin(a)) || 1; ctx.strokeStyle = css("--chem"); ctx.strokeRect(Tx - 10 * Math.cos(a) * sx * 0 - (tx * 10 + Math.cos(a) * 10 * 0), Ty - 10, 1, 1);
+        dot(ctx, Tx, Ty, 4, css("--ink")); text(ctx, "T", Tx + 12 * Math.cos(a), Ty + 12 * Math.sin(a), { size: 13 }); text(ctx, "radius ⟂ tangent at T", cx, cy + r + 30, { size: 12, align: "center", color: css("--muted") });
+        msg = `<b>A tangent is perpendicular to the radius</b> at the point of contact T, wherever T is.`; }
+      else if (ty === 2) { const a1 = Math.PI * .75, a2 = -Math.PI * .1, [Ax, Ay] = P(a1), [Bx, By] = P(a2);
+        const mid = [(Ax + Bx) / 2 + (cx - (Ax + Bx) / 2) * -0.6, (Ay + By) / 2 + (cy - (Ay + By) / 2) * -0.6];
+        const ext = 1.3 + k * 1.2; const Px = cx + (mid[0] - cx) * ext, Py = cy + (mid[1] - cy) * ext;
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Px, Py); ctx.lineTo(Ax, Ay); ctx.moveTo(Px, Py); ctx.lineTo(Bx, By); ctx.stroke();
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(Px, Py); ctx.stroke(); ctx.setLineDash([]);
+        dot(ctx, Ax, Ay, 4, css("--ink")); dot(ctx, Bx, By, 4, css("--ink")); dot(ctx, Px, Py, 4, col);
+        text(ctx, "A", Ax - 12, Ay, { size: 13 }); text(ctx, "B", Bx + 10, By, { size: 13 }); text(ctx, "P", Px, Py + (Py > cy ? 18 : -10), { size: 13 });
+        const dA = Math.hypot(Px - Ax, Py - Ay).toFixed(0), dB = Math.hypot(Px - Bx, Py - By).toFixed(0);
+        msg = `<b>Two tangents from an external point P are equal in length</b>: PA = PB (${dA} ≈ ${dB} px). PO also bisects angle APB.`; }
+      else if (ty === 3) { const [Ax, Ay] = P(Math.PI * .8), [Bx, By] = P(Math.PI * .15), a = Math.PI * 1.15 + k * Math.PI * .5, [Cx, Cy] = P(a), [Dx, Dy] = P(a - Math.PI * .35 - k * 0.3);
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.stroke();
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Cx, Cy); ctx.lineTo(Ax, Ay); ctx.moveTo(Cx, Cy); ctx.lineTo(Bx, By); ctx.stroke();
+        ctx.strokeStyle = css("--chem"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Dx, Dy); ctx.lineTo(Ax, Ay); ctx.moveTo(Dx, Dy); ctx.lineTo(Bx, By); ctx.stroke();
+        [["A", Ax, Ay], ["B", Bx, By], ["C", Cx, Cy, col], ["D", Dx, Dy, css("--chem")]].forEach(([l, x, y, c]) => { dot(ctx, x, y, 4, c || css("--ink")); text(ctx, l, x + 12 * (x > cx ? 1 : -1), y, { size: 13, color: c }); });
+        text(ctx, "C, D on the same (major) arc", cx, cy + r + 30, { size: 12, align: "center", color: css("--muted") });
+        msg = `<b>Angles in the same segment are equal.</b> Angles ACB and ADB are both subtended by chord AB from the same (major) arc, so angle ACB = angle ADB.`; }
+      else { const aT = Math.PI * .5, [Tx, Ty] = P(aT), tx = Math.cos(aT + Math.PI / 2), ty2 = Math.sin(aT + Math.PI / 2);
+        const [Ax, Ay] = P(Math.PI * .5 + Math.PI * .55), [Bx, By] = P(Math.PI * .5 - (0.3 + k * 1.3));
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(Tx - tx * 110, Ty - ty2 * 110); ctx.lineTo(Tx + tx * 110, Ty + ty2 * 110); ctx.stroke();
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Tx, Ty); ctx.lineTo(Ax, Ay); ctx.lineTo(Bx, By); ctx.lineTo(Tx, Ty); ctx.stroke();
+        dot(ctx, Tx, Ty, 4, col); dot(ctx, Ax, Ay, 4); dot(ctx, Bx, By, 4);
+        text(ctx, "T", Tx, Ty + 16, { size: 13 }); text(ctx, "A", Ax - 12, Ay, { size: 13 }); text(ctx, "B", Bx + 10, By, { size: 13 });
+        msg = `<b>Alternate segment theorem:</b> the angle between the tangent at T and chord TA equals the angle TBA in the alternate segment (on the other side of the chord).`; }
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
