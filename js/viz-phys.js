@@ -169,4 +169,47 @@
       if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
     });
   };
+
+  // ---------- Pressure: jets from a tank get longer with depth ----------
+  V.pressureDepth = (host) => mount(host, (ctx, W, H, t) => {
+    const b = cs("--maths"), c = cs("--physics"), tx = Math.max(150, W * .2), tw = 110, top = 24, lvl = 40, bot = H * .58, floor = H - 12, G = 600;
+    ctx.fillStyle = b + "30"; ctx.fillRect(tx, lvl, tw, bot - lvl); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(tx, top); ctx.lineTo(tx, bot); ctx.lineTo(tx + tw, bot); ctx.lineTo(tx + tw, top); ctx.stroke();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx + 10, bot); ctx.lineTo(tx + 10, floor); ctx.moveTo(tx + tw - 10, bot); ctx.lineTo(tx + tw - 10, floor); ctx.moveTo(20, floor); ctx.lineTo(W - 20, floor); ctx.stroke();
+    ctx.strokeStyle = b; ctx.beginPath(); ctx.moveTo(tx, lvl); ctx.lineTo(tx + tw, lvl); ctx.stroke();
+    [.25, .5, .85].forEach((f, i) => { const y = lvl + f * (bot - lvl), d = y - lvl, vx = 30 * Math.sqrt(d), tf = Math.sqrt(2 * (floor - y) / G);
+      ctx.strokeStyle = b; ctx.lineWidth = 3; ctx.beginPath(); for (let k = 0; k <= 40; k++) { const tt = tf * k / 40, X = tx + tw + vx * tt, Y = y + .5 * G * tt * tt; k ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke();
+      for (let j = 0; j < 3; j++) { const tt = ((t * .9 + j / 3 + i * .1) % 1) * tf; dot(ctx, tx + tw + vx * tt, y + .5 * G * tt * tt, 4, b, 8); }
+      text(ctx, ["shallow: weak jet", "deeper: stronger jet", "deepest: strongest jet"][i], tx - 30, y + 4, { size: 11, align: "right", color: cs("--muted") });
+      arrow(ctx, tx + 18, y, tx + 18 - (6 + d * .12), y, c, 2); });
+    text(ctx, "pressure increases with depth", W - 16, 22, { size: 13, align: "right", weight: 600 });
+    text(ctx, "Δp = ρgΔh", W - 16, 42, { size: 13, align: "right", color: c, weight: 600 });
+  }, { h: 320, period: 6, caption: "Water squirts further from deeper holes: more water above, so more pressure pushing it out" });
+
+  // ---------- Interactive: float or sink ----------
+  DEMOS.density = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const liquids = [["water", 1.0], ["salt water", 1.2], ["oil", 0.9], ["mercury", 13.6]];
+    let li = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = liquids.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; li = +bt.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); };
+    root.appendChild(segEl);
+    const v = controls(root, [
+      { key: "m", label: "mass of block (g)", min: 20, max: 1200, step: 10, value: 300 },
+      { key: "V", label: "volume of block (cm³)", min: 100, max: 1000, step: 10, value: 400 }
+    ]);
+    const out = readout(root); let last = "", y = 0;
+    return loop(() => {
+      size(); const w = W(), h = H(), [ln, rl] = liquids[li], rho = v.m / v.V, surf = 110, bot = h - 20; ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = (li === 3 ? css("--muted") : css("--maths")) + "30"; ctx.fillRect(40, surf, w - 80, bot - surf);
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 30); ctx.lineTo(40, bot); ctx.lineTo(w - 40, bot); ctx.lineTo(w - 40, 30); ctx.stroke();
+      const side = 40 + Math.cbrt(v.V) * 5, frac = Math.min(1, rho / rl), target = rho < rl ? surf - side + side * frac : bot - side;
+      y += (target - y) * .08; if (!y) y = 40;
+      ctx.fillStyle = col + "aa"; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(w / 2 - side / 2, y, side, side, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = "600 13px Inter, sans-serif"; ctx.textAlign = "center"; ctx.fillText(rho.toFixed(2) + " g/cm³", w / 2, y + side / 2 + 5); ctx.textAlign = "left";
+      ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = css("--muted"); ctx.fillText(ln + ": " + rl + " g/cm³", 50, surf + 18);
+      const txt = `Density of block $\\rho=\\dfrac{m}{V}=\\dfrac{${v.m}}{${v.V}}=${fix(rho, 2)}$ g/cm³. ${rho < rl ? `Less dense than ${ln} (${rl} g/cm³), so it <b>floats</b>, with about ${Math.round(frac * 100)}% of it below the surface.` : rho > rl ? `Denser than ${ln} (${rl} g/cm³), so it <b>sinks</b>.` : `Same density as ${ln}: it hangs anywhere in the liquid.`}`;
+      if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
+    });
+  };
 })();
