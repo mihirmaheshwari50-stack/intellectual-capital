@@ -160,5 +160,52 @@
       text(ctx, "Cu²⁺ + 2e⁻ → Cu", cx, y + 60, { size: 13, align: "center", weight: 700 }); text(ctx, "gains electrons: REDUCED", cx, y + 78, { size: 12, align: "center", color: cs("--maths"), weight: 600 }); text(ctx, "(Cu²⁺ is the oxidising agent)", cx, y + 94, { size: 11, align: "center", color: cs("--muted") }); }
     text(ctx, "Zn + CuSO₄ → ZnSO₄ + Cu: blue solution fades, pink copper forms on the zinc", 16, 22, { size: 12, weight: 600 });
   }, { h: 280, period: 6, caption: "Oxidation and reduction always happen together: the electrons lost by one are gained by the other" });
+
+  // ---------- Neutralisation at particle level ----------
+  V.neutralise = (host) => mount(host, (ctx, W, H, t, P) => {
+    const n = 10, x0 = 30, w = W - 60, y0 = 40, h = H - 80, k = clamp(t / (P * .7));
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.strokeRect(x0, y0, w, h);
+    for (let i = 0; i < n; i++) { const done = (i + .5) / n < k, cx = x0 + 40 + (i % 5) * (w - 80) / 4, cy = y0 + 50 + Math.floor(i / 5) * (h - 100);
+      if (!done) { const off = 34 * (1 - Math.max(0, (k * n - i) * 2)); dot(ctx, cx - Math.max(10, off), cy + 3 * Math.sin(t * 5 + i), 10, cs("--bad")); text(ctx, "H⁺", cx - Math.max(10, off), cy + 4 + 3 * Math.sin(t * 5 + i), { size: 10, align: "center", color: "#fff", weight: 700 }); dot(ctx, cx + Math.max(10, off), cy + 3 * Math.cos(t * 5 + i), 12, cs("--maths")); text(ctx, "OH⁻", cx + Math.max(10, off), cy + 4 + 3 * Math.cos(t * 5 + i), { size: 9, align: "center", color: "#fff", weight: 700 }); }
+      else { dot(ctx, cx, cy, 14, cs("--chem")); text(ctx, "H₂O", cx, cy + 4, { size: 10, align: "center", color: "#fff", weight: 700 }); } }
+    for (let i = 0; i < 6; i++) { const x = x0 + 30 + i * (w - 60) / 5, y = y0 + h / 2 + 8 * Math.sin(t * 3 + i); dot(ctx, x, y, 7, cs("--muted")); text(ctx, i % 2 ? "Na⁺" : "Cl⁻", x, y + 3, { size: 8, align: "center", color: "#fff", weight: 700 }); }
+    text(ctx, "H⁺(aq) + OH⁻(aq) → H₂O(l)", 16, 24, { size: 14, weight: 700 }); text(ctx, "Na⁺ and Cl⁻ are spectator ions: they stay in solution as the salt", W - 16, H - 12, { size: 12, align: "right", color: cs("--muted") });
+  }, { h: 260, period: 7, caption: "Neutralisation: hydrogen ions from the acid combine with hydroxide ions from the alkali" });
+
+  // ---------- Interactive: titration ----------
+  DEMOS.titration = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 340); let ind = 0, added = 0, running = false, tp = 0;
+    const inds = [["phenolphthalein", (pH) => pH < 8.2 ? "#ffffff00" : pH < 10 ? `rgba(220,60,160,${(pH - 8.2) / 1.8 * .6})` : "rgba(220,60,160,.6)"], ["methyl orange", (pH) => pH < 3.1 ? "rgba(220,50,40,.55)" : pH < 4.4 ? "rgba(235,120,40,.55)" : "rgba(240,200,40,.55)"], ["universal indicator", (pH) => `hsla(${Math.min(280, Math.max(0, (pH - 1) / 13 * 280))},75%,50%,.5)`]];
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = inds.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; ind = +bt.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); };
+    const bar = document.createElement("div"); bar.style.cssText = "display:flex;gap:8px;margin-top:10px;flex-wrap:wrap";
+    bar.innerHTML = `<button class="btn small" data-a="run">Open tap</button><button class="btn ghost small" data-a="drop">Add 1 drop</button><button class="btn ghost small" data-a="reset">Refill</button>`;
+    bar.onclick = e => { const a = e.target.closest("[data-a]")?.dataset.a; if (a === "run") { running = !running; e.target.textContent = running ? "Close tap" : "Open tap"; } if (a === "drop") added = Math.min(50, added + .05); if (a === "reset") { added = 0; running = false; bar.querySelector('[data-a="run"]').textContent = "Open tap"; } };
+    root.appendChild(segEl); root.appendChild(bar); const out = readout(root); let last = "";
+    // 25.0 cm³ of 0.100 mol/dm³ HCl with 0.100 mol/dm³ NaOH: end-point at 25.0 cm³
+    const pHof = (v) => { const nA = .0025 - .0001 * v, V = (25 + v) / 1000; if (Math.abs(nA) < 1e-7) return 7; return nA > 0 ? -Math.log10(nA / V) : 14 + Math.log10(-nA / V); };
+    return loop((tt) => {
+      size(); const w = W(), h = H(), dt = Math.min(.05, tt - tp); tp = tt; ctx.clearRect(0, 0, w, h); if (running) added = Math.min(50, added + dt * (Math.abs(added - 25) < 2 ? .4 : 2.5));
+      const pH = pHof(added), bx = 90;
+      // burette
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.strokeRect(bx - 8, 10, 16, 200); ctx.fillStyle = css("--maths") + "33"; ctx.fillRect(bx - 7, 11 + added / 50 * 198, 14, 198 - added / 50 * 198);
+      for (let i = 0; i <= 10; i++) { ctx.beginPath(); ctx.moveTo(bx + 8, 10 + i * 20); ctx.lineTo(bx + 14, 10 + i * 20); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(bx, 210); ctx.lineTo(bx, 236); ctx.stroke(); ctx.fillStyle = css("--ink"); ctx.fillRect(bx - 10, 214, 20, 6);
+      if (running && Math.floor(tt * 6) % 2) dot(ctx, bx, 246, 3, css("--maths"));
+      // conical flask
+      ctx.beginPath(); ctx.moveTo(bx - 14, 252); ctx.lineTo(bx - 14, 268); ctx.lineTo(bx - 52, h - 14); ctx.lineTo(bx + 52, h - 14); ctx.lineTo(bx + 14, 268); ctx.lineTo(bx + 14, 252); ctx.stroke();
+      const liq = () => { ctx.beginPath(); ctx.moveTo(bx - 34, h - 50); ctx.lineTo(bx - 52, h - 14); ctx.lineTo(bx + 52, h - 14); ctx.lineTo(bx + 34, h - 50); ctx.fill(); };
+      ctx.fillStyle = css("--maths") + "18"; liq(); ctx.fillStyle = inds[ind][1](pH); liq();
+      ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText(added.toFixed(2) + " cm³ added", bx + 22, 30); ctx.fillText("NaOH(aq)", bx + 22, 48);
+      // pH curve
+      const gx = 260, gw = w - gx - 20, gy = 16, gh = h - 50; ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+      ctx.fillText("pH", gx + 8, gy + 10); ctx.textAlign = "right"; for (const p of [0, 7, 14]) ctx.fillText(p, gx - 6, gy + gh - p / 14 * gh + 4); ctx.textAlign = "center"; ctx.fillText("25.0", gx + gw / 2, gy + gh + 18); ctx.textAlign = "left"; ctx.fillText("volume of NaOH / cm³", gx + gw - 130, gy + gh + 18);
+      ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(gx + 25 / 50 * gw, gy); ctx.lineTo(gx + 25 / 50 * gw, gy + gh); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); for (let v = 0; v <= added + 1e-9; v += .1) { const X = gx + v / 50 * gw, Y = gy + gh - pHof(v) / 14 * gh; v ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); dot(ctx, gx + added / 50 * gw, gy + gh - pH / 14 * gh, 5, col, 10);
+      const txt = `pH ${pH.toFixed(1)}. Flask: 25.0 cm³ of 0.100 mol/dm³ HCl. Burette: 0.100 mol/dm³ NaOH. ${added < 24.5 ? "Still acidic." : added <= 25.5 ? "<b>End-point!</b> The indicator changes colour at the steep part of the curve (25.0 cm³). Close the tap and read the burette." : "Overshot: now alkaline. Refill and add dropwise near the end-point."}`;
+      if (txt !== last) { out.innerHTML = txt; last = txt; }
+    });
+  };
   V._chem = { rnd, bounce };
 })();
