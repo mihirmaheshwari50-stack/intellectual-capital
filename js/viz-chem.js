@@ -207,5 +207,77 @@
       if (txt !== last) { out.innerHTML = txt; last = txt; }
     });
   };
+  // ---------- Group I metals with water: vigour increases down the group ----------
+  V.alkaliWater = (host) => mount(host, (ctx, W, H, t, P) => {
+    const ms = [["Li", "lithium", .35, null, "fizzes steadily, floats"], ["Na", "sodium", .7, null, "melts into a ball, darts about"], ["K", "potassium", 1, "#b07ae0", "lilac flame, may spit"]];
+    const cw = (W - 40) / 3, wy = H * .55;
+    ms.forEach(([s, n, v, fl, d], i) => {
+      const x0 = 20 + i * cw, cx = x0 + cw / 2;
+      ctx.fillStyle = cs("--maths") + "22"; ctx.fillRect(x0 + 10, wy, cw - 20, H - wy - 50); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + 10, wy - 30); ctx.lineTo(x0 + 10, H - 50); ctx.lineTo(x0 + cw - 10, H - 50); ctx.lineTo(x0 + cw - 10, wy - 30); ctx.stroke();
+      const sz = (14 - 6 * clamp(t / P * v * 1.3)) * (i ? .9 : 1), dx = i ? Math.sin(t * (2 + 3 * v)) * (cw / 2 - 30) * v : Math.sin(t) * 6, px = cx + dx;
+      if (sz > 4) { ctx.fillStyle = "#c9c9cf"; ctx.beginPath(); i ? ctx.arc(px, wy - sz * .3, sz, 0, 7) : ctx.rect(px - sz, wy - sz * .8, sz * 2, sz * 1.2); ctx.fill(); ctx.strokeStyle = cs("--muted"); ctx.stroke(); }
+      for (let b = 0; b < 4 + 10 * v; b++) { const ph = (t * (1 + 2 * v) + rnd(b, i)) % 1, bx = px + (rnd(b, i + 5) - .5) * 26, by = wy - 6 - ph * 50 * v - 10; ctx.globalAlpha = 1 - ph; ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(bx, by, 2 + 2 * rnd(b, 9), 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+      if (fl && sz > 4) for (let f = 0; f < 5; f++) { const h = 22 + 10 * Math.sin(t * 13 + f * 2); ctx.fillStyle = fl + "88"; ctx.beginPath(); ctx.ellipse(px + (f - 2) * 4, wy - sz - h / 2, 5, h / 2, 0, 0, 7); ctx.fill(); }
+      text(ctx, s + ": " + n, cx, H - 28, { size: 14, align: "center", weight: 700 }); text(ctx, d, cx, H - 10, { size: 11, align: "center", color: cs("--muted") });
+    });
+    text(ctx, "2M(s) + 2H₂O(l) → 2MOH(aq) + H₂(g)", 16, 22, { size: 13, weight: 700 }); text(ctx, "more reactive down the group →", W - 16, 22, { size: 12, align: "right", color: cs("--bad"), weight: 600 });
+  }, { h: 300, period: 8, caption: "Lithium, sodium and potassium in water: all fizz (hydrogen) and form an alkaline hydroxide, faster down the group" });
+
+  // ---------- Halogen displacement: chlorine + bromide ----------
+  V.halogenDisplace = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = clamp((t / P - .15) / .55), tx = W * .2, y0 = 50, th = H - 100;
+    // test tube colour colourless -> orange
+    ctx.fillStyle = `rgba(${Math.round(255 - 30 * k)},${Math.round(255 - 120 * k)},${Math.round(255 - 230 * k)},.8)`; ctx.fillRect(tx - 18, y0 + th * .35, 36, th * .65 - 18); ctx.beginPath(); ctx.arc(tx, y0 + th - 18, 18, 0, Math.PI); ctx.fill();
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(tx - 18, y0); ctx.lineTo(tx - 18, y0 + th - 18); ctx.arc(tx, y0 + th - 18, 18, Math.PI, 0, true); ctx.lineTo(tx + 18, y0); ctx.stroke();
+    text(ctx, k < .5 ? "colourless KBr(aq)" : "orange: Br₂ formed", tx, H - 26, { size: 12, align: "center", weight: 600 });
+    if (t / P < .3) { const dy = (t / P / .3) * th * .3; ctx.fillStyle = "#c8d84a"; ctx.beginPath(); ctx.arc(tx, y0 + dy, 4, 0, 7); ctx.fill(); text(ctx, "add Cl₂(aq)", tx + 26, y0 + 10, { size: 12, color: cs("--muted") }); }
+    // particle view
+    const px = W * .4, R = W - 30 - px, y = H / 2;
+    const at = (x, yy, r, c, l) => { dot(ctx, x, yy, r, c); text(ctx, l, x, yy + 4, { size: 11, align: "center", color: "#fff", weight: 700 }); };
+    const green = "#7a9a1e", orange = "#c0562a";
+    // Cl2 splits into 2 Cl-, 2 Br- become Br2
+    const cl1 = [px + R * .12, y - 50], cl2 = [px + R * .12 + 30 + R * .3 * k, y - 50], br1 = [px + R * (.5 + .1 * k), y + 50], br2 = [px + R * (.95 - .35 * k) + 36 * k, y + 50];
+    if (k < .99) ctx.strokeStyle = green, ctx.lineWidth = 3 * (1 - k), ctx.beginPath(), ctx.moveTo(...cl1), ctx.lineTo(...cl2), ctx.stroke();
+    if (k > .01) ctx.strokeStyle = orange, ctx.lineWidth = 3 * k, ctx.beginPath(), ctx.moveTo(...br1), ctx.lineTo(...br2), ctx.stroke();
+    at(...cl1, 15, green, k > .5 ? "Cl⁻" : "Cl"); at(...cl2, 15, green, k > .5 ? "Cl⁻" : "Cl"); at(...br1, 18, orange, k > .5 ? "Br" : "Br⁻"); at(...br2, 18, orange, k > .5 ? "Br" : "Br⁻");
+    for (let e = 0; e < 2; e++) { const f = clamp(k * 1.2 - e * .2), sx = (e ? br2 : br1)[0], sy = y + 30, ex = (e ? cl2 : cl1)[0], ey = y - 28; if (f > 0 && f < 1) { const x = sx + (ex - sx) * f, yy = sy + (ey - sy) * f; dot(ctx, x, yy, 5, cs("--physics"), 10); text(ctx, "e⁻", x + 8, yy, { size: 11, color: cs("--physics") }); } }
+    if (k > .95) { text(ctx, "Cl₂ + 2e⁻ → 2Cl⁻  (reduced)", px + 10, y - 86, { size: 12, weight: 700, color: green }); text(ctx, "2Br⁻ → Br₂ + 2e⁻  (oxidised)", px + 10, y + 96, { size: 12, weight: 700, color: orange }); }
+    text(ctx, "Cl₂ + 2KBr → 2KCl + Br₂: a more reactive halogen displaces a less reactive one", 16, 22, { size: 12, weight: 600 });
+  }, { h: 320, period: 7, caption: "Chlorine is more reactive than bromine, so it takes electrons from bromide ions" });
+
+  // ---------- Interactive: periodic table explorer (Z = 1–36) ----------
+  DEMOS.ptable = (root, col) => {
+    // [Z, sym, name, group(0 = transition), period, mp °C, type m/n/s(metalloid), state at 20 °C]
+    const E = [[1,"H","hydrogen",1,1,-259,"n","g"],[2,"He","helium",8,1,-272,"n","g"],[3,"Li","lithium",1,2,181,"m","s"],[4,"Be","beryllium",2,2,1287,"m","s"],[5,"B","boron",3,2,2076,"s","s"],[6,"C","carbon",4,2,3550,"n","s"],[7,"N","nitrogen",5,2,-210,"n","g"],[8,"O","oxygen",6,2,-218,"n","g"],[9,"F","fluorine",7,2,-220,"n","g"],[10,"Ne","neon",8,2,-249,"n","g"],
+      [11,"Na","sodium",1,3,98,"m","s"],[12,"Mg","magnesium",2,3,650,"m","s"],[13,"Al","aluminium",3,3,660,"m","s"],[14,"Si","silicon",4,3,1414,"s","s"],[15,"P","phosphorus",5,3,44,"n","s"],[16,"S","sulfur",6,3,115,"n","s"],[17,"Cl","chlorine",7,3,-102,"n","g"],[18,"Ar","argon",8,3,-189,"n","g"],
+      [19,"K","potassium",1,4,63,"m","s"],[20,"Ca","calcium",2,4,842,"m","s"],[21,"Sc","scandium",0,4,1541,"m","s"],[22,"Ti","titanium",0,4,1668,"m","s"],[23,"V","vanadium",0,4,1910,"m","s"],[24,"Cr","chromium",0,4,1907,"m","s"],[25,"Mn","manganese",0,4,1246,"m","s"],[26,"Fe","iron",0,4,1538,"m","s"],[27,"Co","cobalt",0,4,1495,"m","s"],[28,"Ni","nickel",0,4,1455,"m","s"],[29,"Cu","copper",0,4,1085,"m","s"],[30,"Zn","zinc",0,4,420,"m","s"],
+      [31,"Ga","gallium",3,4,30,"m","s"],[32,"Ge","germanium",4,4,938,"s","s"],[33,"As","arsenic",5,4,817,"s","s"],[34,"Se","selenium",6,4,221,"n","s"],[35,"Br","bromine",7,4,-7,"n","l"],[36,"Kr","krypton",8,4,-157,"n","g"]];
+    const col18 = (e) => e[3] === 0 ? e[0] - 18 : e[3] === 8 ? 18 : e[3] <= 2 ? e[3] : e[3] + 10;
+    const conf = (z) => { if (z > 20) return "[Ar] + d-electrons (transition / beyond Sc)"; const s = [2, 8, 8, 2], out = []; let r = z; for (const c of s) { if (r <= 0) break; out.push(Math.min(c, r)); r -= c; } return out.join(","); };
+    const box = document.createElement("div"); box.style.cssText = "position:relative;overflow-x:auto"; const grid = document.createElement("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(18,minmax(30px,1fr));gap:3px;min-width:600px";
+    const modes = [["metal / non-metal", e => ({ m: "#5b8def", n: "#e8913a", s: "#9b7fd4" })[e[6]]], ["state at room temp", e => ({ s: "#8a8f98", l: "#d9534f", g: "#4fb0c6" })[e[7]]], ["melting point", e => `hsl(${220 - Math.max(0, Math.min(1, (e[5] + 273) / 3800)) * 220},70%,55%)`], ["group", e => e[3] === 0 ? "#b0a090" : `hsl(${(e[3] - 1) * 45},60%,55%)`]];
+    let mode = 0, sel = 11;
+    const seg = document.createElement("div"); seg.className = "seg wrap"; seg.style.marginTop = "12px"; seg.innerHTML = modes.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    const out = document.createElement("div"); out.className = "readout";
+    const draw = () => {
+      grid.innerHTML = ""; const cells = {}; E.forEach(e => cells[e[4] + ":" + col18(e)] = e);
+      for (let p = 0; p <= 4; p++) for (let c = 1; c <= 18; c++) {
+        const d = document.createElement("div"); d.style.cssText = "aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Inter,sans-serif;line-height:1.05";
+        if (p === 0) { const g = c <= 2 ? ["I", "II"][c - 1] : c >= 13 ? ["III", "IV", "V", "VI", "VII", "VIII"][c - 13] : ""; d.textContent = g; d.style.cssText += ";aspect-ratio:auto;color:var(--muted);font-size:11px"; grid.appendChild(d); continue; }
+        const e = cells[p + ":" + c]; if (!e) { grid.appendChild(d); continue; }
+        d.style.background = modes[mode][1](e); d.style.color = "#fff"; d.style.cursor = "pointer"; if (e[0] === sel) d.style.outline = "3px solid var(--ink)";
+        d.innerHTML = `<span style="font-size:9px;opacity:.85">${e[0]}</span>${e[1]}`; d.onclick = () => { sel = e[0]; draw(); }; grid.appendChild(d);
+      }
+      const e = E[sel - 1], g = e[3] === 0 ? "transition element" : e[3] === 8 ? "Group VIII (noble gas)" : "Group " + ["I", "II", "III", "IV", "V", "VI", "VII"][e[3] - 1];
+      const ty = { m: "metal", n: "non-metal", s: "metalloid (in-between)" }[e[6]], st = { s: "solid", l: "liquid", g: "gas" }[e[7]];
+      const fam = e[3] === 1 && e[0] > 1 ? " Alkali metal: soft, low density, reacts with water to give hydrogen and an alkaline hydroxide." : e[3] === 7 ? " Halogen: diatomic, coloured, more reactive higher up the group." : e[3] === 8 ? " Noble gas: full outer shell, so unreactive and monatomic." : e[3] === 0 ? " Transition element: high density and melting point, coloured compounds, variable oxidation numbers, catalysts." : "";
+      out.innerHTML = `<b>${e[2][0].toUpperCase() + e[2].slice(1)} (${e[1]})</b>, Z = ${e[0]}. Period ${e[4]}, ${g}. ${ty[0].toUpperCase() + ty.slice(1)}, ${st} at room temperature, melting point ${e[5]} °C. ${e[0] <= 20 ? "Electronic configuration " + conf(e[0]) + " (" + (e[3] === 8 ? (e[0] === 2 ? 2 : 8) : e[3]) + " outer electron" + (e[3] === 1 ? "" : "s") + ", " + e[4] + " shell" + (e[4] > 1 ? "s" : "") + ")." : ""}${fam}`;
+    };
+    seg.onclick = ev => { const b = ev.target.closest("button"); if (!b) return; mode = +b.dataset.i; seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); };
+    box.appendChild(grid); root.appendChild(box); root.appendChild(seg); root.appendChild(out); draw();
+    return () => {};
+  };
+
   V._chem = { rnd, bounce };
 })();
