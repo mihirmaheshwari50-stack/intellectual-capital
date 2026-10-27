@@ -561,5 +561,60 @@
     });
   };
 
+  // ---------- Paper chromatography ----------
+  V.chromatography = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = clamp(t / (P * .75)), px = W * .12, pw = W * .45, top = 30, bot = H - 30, base = bot - 40, front = base - k * (base - top - 20);
+    ctx.fillStyle = cs("--maths") + "22"; ctx.fillRect(px - 20, bot - 26, pw + 40, 26); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.strokeRect(px - 20, top - 10, pw + 40, bot - top + 10);
+    ctx.fillStyle = "#fffdf6"; ctx.fillRect(px, top, pw, bot - top - 8); ctx.fillStyle = cs("--maths") + "18"; ctx.fillRect(px, front, pw, bot - 8 - front); ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1; ctx.strokeRect(px, top, pw, bot - top - 8);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = cs("--ink"); ctx.beginPath(); ctx.moveTo(px, base); ctx.lineTo(px + pw, base); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.moveTo(px, front); ctx.lineTo(px + pw, front); ctx.stroke();
+    const samples = [["A", [[.8, "#d93a3a"], [.35, "#3a6ad9"]]], ["B", [[.35, "#3a6ad9"]]], ["C", [[.55, "#e0b020"]]], ["X", [[.8, "#d93a3a"], [.55, "#e0b020"], [.12, "#2a9a5a"]]]];
+    samples.forEach(([l, sp], i) => { const x = px + (i + .5) * pw / 4; sp.forEach(([rf, c]) => { const y = base - rf * (front - base) * -1; ctx.fillStyle = c; ctx.globalAlpha = .85; ctx.beginPath(); ctx.ellipse(x, y, 8, 6 + 2 * k, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }); text(ctx, l, x, bot + 14, { size: 12, align: "center", weight: 700 }); });
+    text(ctx, "pencil baseline (above solvent)", px + pw + 30, base + 4, { size: 11, color: cs("--muted") }); text(ctx, "solvent front", px + pw + 30, front + 4, { size: 11, color: cs("--maths"), weight: 600 }); text(ctx, "solvent", px + pw + 30, bot - 10, { size: 11, color: cs("--maths") });
+    if (k > .98) { text(ctx, "X = A's red dye + C's yellow dye", px + pw + 30, top + 50, { size: 12, weight: 600 }); text(ctx, "+ one substance not in A, B or C", px + pw + 30, top + 68, { size: 12, weight: 600 }); }
+  }, { h: 300, period: 9, caption: "Paper chromatography: each dye moves a different distance depending on its solubility and attraction to the paper" });
+
+  // ---------- Interactive: qualitative analysis ----------
+  DEMOS.iontest = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    // cation data: [name, NaOH few, NaOH excess, NH3 few, NH3 excess, flame, ppt colour, after-excess colour (NaOH), (NH3)]
+    const CAT = { "Al³⁺": ["white ppt", "dissolves → colourless solution", "white ppt", "insoluble in excess", null, "#f2f2f2", null, "#f2f2f2"], "NH₄⁺": ["no ppt; on warming, ammonia gas turns damp red litmus blue", "—", "no change", "—", null, null, null, null], "Ca²⁺": ["white ppt", "insoluble in excess", "no ppt or very slight white ppt", "—", "orange-red", "#f2f2f2", "#f2f2f2", null], "Cr³⁺": ["green ppt", "dissolves → dark green solution", "grey-green ppt", "insoluble in excess", null, "#4f8a3a", "sol:#3a7a30", "#6a8a5a"], "Cu²⁺": ["light blue ppt", "insoluble in excess", "light blue ppt", "dissolves → dark blue solution", "blue-green", "#79b4e8", "#79b4e8", "sol:#1d3fb8"], "Fe²⁺": ["green ppt", "insoluble in excess", "green ppt", "insoluble in excess", null, "#4e7a3a", "#4e7a3a", "#4e7a3a"], "Fe³⁺": ["red-brown ppt", "insoluble in excess", "red-brown ppt", "insoluble in excess", null, "#9a4a1e", "#9a4a1e", "#9a4a1e"], "Zn²⁺": ["white ppt", "dissolves → colourless solution", "white ppt", "dissolves → colourless solution", null, "#f2f2f2", null, null] };
+    const AN = { "Cl⁻": ["white ppt (AgCl)", "#f4f4f4"], "Br⁻": ["cream ppt (AgBr)", "#efe4b8"], "I⁻": ["yellow ppt (AgI)", "#f2dc4a"], "SO₄²⁻": ["white ppt (BaSO₄)", "#f4f4f4"], "CO₃²⁻": ["fizzes: CO₂ turns limewater milky", null], "NO₃⁻": ["ammonia given off: damp red litmus turns blue", null] };
+    const SAMPLES = [["Cu²⁺", "SO₄²⁻", "copper(II) sulfate", "#7fb3e8"], ["Fe²⁺", "SO₄²⁻", "iron(II) sulfate", "#bcd8a8"], ["Fe³⁺", "Cl⁻", "iron(III) chloride", "#e2b26a"], ["Zn²⁺", "NO₃⁻", "zinc nitrate", null], ["Al³⁺", "SO₄²⁻", "aluminium sulfate", null], ["Ca²⁺", "Cl⁻", "calcium chloride", null], ["NH₄⁺", "Cl⁻", "ammonium chloride", null], ["Cr³⁺", "Cl⁻", "chromium(III) chloride", "#6aa060"], ["Na⁺", "I⁻", "sodium iodide", null], ["K⁺", "Br⁻", "potassium bromide", null], ["Na⁺", "CO₃²⁻", "sodium carbonate", null], ["Li⁺", "Cl⁻", "lithium chloride", null]];
+    const FLAME = { "Li⁺": ["red", "#e0303a"], "Na⁺": ["yellow", "#f4c020"], "K⁺": ["lilac", "#b07ae0"], "Ca²⁺": ["orange-red", "#f06a2a"], "Ba²⁺": ["light green", "#8fd06a"], "Cu²⁺": ["blue-green", "#2ab0a0"] };
+    let s = 0, test = null, t0 = 0, reveal = false;
+    const pick = document.createElement("div"); pick.className = "seg wrap"; pick.style.marginTop = "12px"; pick.innerHTML = SAMPLES.map((_, i) => `<button aria-pressed="${i === 0}" data-i="${i}">Unknown ${String.fromCharCode(65 + i)}</button>`).join("");
+    pick.onclick = e => { const b = e.target.closest("button"); if (!b) return; s = +b.dataset.i; test = null; reveal = false; pick.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    const T = [["naoh1", "NaOH(aq): a few drops"], ["naohx", "NaOH(aq): excess"], ["nh31", "NH₃(aq): a few drops"], ["nh3x", "NH₃(aq): excess"], ["flame", "Flame test"], ["ag", "HNO₃ then AgNO₃(aq)"], ["ba", "HNO₃ then Ba(NO₃)₂(aq)"], ["acid", "Dilute HCl"], ["al", "NaOH + Al foil, warm"], ["rev", "Reveal answer"]];
+    const bar = document.createElement("div"); bar.style.cssText = "display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"; bar.innerHTML = T.map(([k, l]) => `<button class="btn ${k === "rev" ? "" : "ghost "}small" data-t="${k}">${l}</button>`).join("");
+    bar.onclick = e => { const b = e.target.closest("[data-t]"); if (!b) return; if (b.dataset.t === "rev") { reveal = true; return; } test = b.dataset.t; t0 = performance.now() / 1000; };
+    root.appendChild(pick); root.appendChild(bar); const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(), el = Math.min(1, (tt - t0) / 1.2); ctx.clearRect(0, 0, w, h);
+      const [cat, an, nm, solC] = SAMPLES[s], cd = CAT[cat]; let msg = "", ppt = null, liquid = solC ? solC + "88" : "rgba(160,190,230,.25)", gas = false, flame = null;
+      if (test === "naoh1" || test === "naohx" || test === "nh31" || test === "nh3x") { const nh3 = test.startsWith("nh3"), ex = test.endsWith("x");
+        if (!cd) msg = `No precipitate with ${nh3 ? "aqueous ammonia" : "aqueous sodium hydroxide"}: the cation is not one of the tested metal ions (Group I ions such as Na⁺, K⁺, Li⁺ give no precipitate). Try a flame test.`;
+        else { const few = nh3 ? cd[2] : cd[0], exr = nh3 ? cd[3] : cd[1]; msg = `<b>${nh3 ? "Aqueous ammonia" : "Aqueous sodium hydroxide"}, ${ex ? "in excess" : "a few drops"}:</b> ${ex ? few + "; " + exr : few}.`;
+          const pc = cd[5], after = nh3 ? cd[7] : cd[6];
+          if (cat === "NH₄⁺") { gas = !nh3; } else if (nh3 && cat === "Ca²⁺") ppt = null; else if (!ex) ppt = pc; else if (after && after.startsWith("sol:")) liquid = after.slice(4) + "cc"; else if (after) ppt = after; else ppt = null; } }
+      if (test === "flame") { const f = FLAME[cat]; flame = f ? f[1] : "#f4a020"; msg = f ? `<b>Flame test:</b> ${f[0]} flame.` : `<b>Flame test:</b> no characteristic colour.`; }
+      if (test === "ag") { const r = AN[an]; if (["Cl⁻", "Br⁻", "I⁻"].includes(an)) { ppt = r[1]; msg = `<b>Acidify with dilute nitric acid, then add aqueous silver nitrate:</b> ${r[0]}. ${an === "Cl⁻" ? "Chloride" : an === "Br⁻" ? "Bromide" : "Iodide"} present.`; } else msg = `<b>Silver nitrate:</b> no precipitate. Not a halide.`; }
+      if (test === "ba") { if (an === "SO₄²⁻") { ppt = "#f4f4f4"; msg = `<b>Acidify with dilute nitric acid, then add aqueous barium nitrate:</b> white precipitate (BaSO₄). Sulfate present.`; } else msg = `<b>Barium nitrate:</b> no precipitate. Not a sulfate.`; }
+      if (test === "acid") { if (an === "CO₃²⁻") { gas = true; msg = `<b>Dilute acid:</b> effervescence; the gas turns limewater milky (CO₂). Carbonate present.`; } else msg = `<b>Dilute acid:</b> no effervescence. Not a carbonate.`; }
+      if (test === "al") { if (an === "NO₃⁻") { gas = true; msg = `<b>Aqueous NaOH and aluminium foil, warmed:</b> ammonia given off, turns damp red litmus blue. Nitrate present.`; } else if (cat === "NH₄⁺") { gas = true; msg = "Ammonia is given off, but this is from the ammonium ion (it reacts with NaOH even without aluminium): test for ammonium first."; } else msg = `<b>NaOH and aluminium:</b> no ammonia. Not a nitrate.`; }
+      if (!test) msg = `Unknown ${String.fromCharCode(65 + s)}: an aqueous solution${solC ? " (it is coloured, a clue: transition-metal ion?)" : " (colourless)"}. Choose a test.`;
+      if (reveal) msg += `<br><b>Answer:</b> ${nm} (${cat} and ${an}).`;
+      // tube
+      const tx = w * .3, ty = 30, th = h - 70;
+      ctx.fillStyle = liquid; ctx.fillRect(tx - 26, ty + th * .35, 52, th * .65 - 26); ctx.beginPath(); ctx.arc(tx, ty + th - 26, 26, 0, Math.PI); ctx.fill();
+      if (ppt) { ctx.fillStyle = ppt; ctx.globalAlpha = .95 * el; for (let i = 0; i < 60; i++) { const x = tx - 20 + rnd(i, 1) * 40, y = ty + th * .4 + (rnd(i, 2) * .5 + .5 * el) * (th * .55 - 20); ctx.beginPath(); ctx.arc(x, Math.min(y, ty + th - 14), 3 + rnd(i, 3) * 2, 0, 7); ctx.fill(); } ctx.globalAlpha = 1; ctx.strokeStyle = "#999"; }
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(tx - 26, ty); ctx.lineTo(tx - 26, ty + th - 26); ctx.arc(tx, ty + th - 26, 26, Math.PI, 0, true); ctx.lineTo(tx + 26, ty); ctx.stroke();
+      if (gas) for (let i = 0; i < 12; i++) { const ph = (tt * .8 + rnd(i, 5)) % 1; ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(tx - 15 + rnd(i, 6) * 30, ty + th - 30 - ph * th * .6, 3, 0, 7); ctx.stroke(); }
+      if (flame) { const fx = w * .7, fy = h - 30; ctx.fillStyle = "#555"; ctx.fillRect(fx - 10, fy - 6, 20, 30); for (let f = 0; f < 6; f++) { ctx.fillStyle = flame + "aa"; ctx.beginPath(); ctx.ellipse(fx + (f - 2.5) * 4, fy - 50, 8, 40 + 8 * Math.sin(tt * 11 + f), 0, 0, 7); ctx.fill(); } ctx.strokeStyle = "#888"; ctx.beginPath(); ctx.moveTo(fx - 60, fy - 90); ctx.lineTo(fx - 6, fy - 66); ctx.stroke(); text(ctx, "nichrome wire loop", fx - 60, fy - 96, { size: 11, color: css("--muted") }); }
+      text(ctx, `Unknown ${String.fromCharCode(65 + s)}`, tx, h - 8, { size: 13, align: "center", weight: 700 });
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._chem = { rnd, bounce };
 })();
