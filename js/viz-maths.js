@@ -610,5 +610,75 @@
     });
   };
 
+  // ---------- Interactive: transformation explorer ----------
+  DEMOS.transform = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 340);
+    const T = ["Translation", "Reflection", "Rotation", "Enlargement"]; let ty = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = T.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const v = DEMOS._lib.controls(root, [
+      { key: "tx", label: "translation: x", min: -6, max: 6, step: 1, value: 3 }, { key: "ty", label: "translation: y", min: -6, max: 6, step: 1, value: 2 },
+      { key: "mline", label: "reflection: line (0=x-axis,1=y-axis,2=y=x,3=y=-x)", min: 0, max: 3, step: 1, value: 1 },
+      { key: "rang", label: "rotation angle (°, +ve = anticlockwise)", min: -270, max: 270, step: 90, value: 90 },
+      { key: "rcx", label: "rotation centre x", min: -4, max: 4, step: 1, value: 0 }, { key: "rcy", label: "rotation centre y", min: -4, max: 4, step: 1, value: 0 },
+      { key: "k", label: "enlargement: scale factor k", min: -3, max: 3, step: .5, value: 2 }, { key: "ecx", label: "enlargement centre x", min: -4, max: 4, step: 1, value: 0 }, { key: "ecy", label: "enlargement centre y", min: -4, max: 4, step: 1, value: 0 }
+    ]);
+    const out = readout(root); let last = "";
+    const shape = [[1, 1], [3, 1], [3, 2], [1.5, 3]];
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const s = Math.min(w, h) / 16, ox = w / 2, oy = h / 2, X = x => ox + x * s, Y = y => oy - y * s;
+      ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; for (let i = -8; i <= 8; i++) { ctx.beginPath(); ctx.moveTo(X(i), 0); ctx.lineTo(X(i), h); ctx.moveTo(0, Y(i)); ctx.lineTo(w, Y(i)); ctx.stroke(); }
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke();
+      const drawShape = (pts, c, fill) => { ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.fillStyle = c + (fill ? "33" : "00"); ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.closePath(); if (fill) ctx.fill(); ctx.stroke(); };
+      drawShape(shape, css("--maths"), true);
+      let img, desc, vec = null;
+      if (ty === 0) { const dx = v.tx, dy = v.ty; img = shape.map(([x, y]) => [x + dx, y + dy]); desc = `Translation by vector $\\begin{pmatrix}${dx}\\\\${dy}\\end{pmatrix}$: every point moves ${dx} right (or left if negative) and ${dy} up (or down if negative). Shape, size and orientation are unchanged.`; }
+      else if (ty === 1) { const m = Math.round(v.mline), refl = p => m === 0 ? [p[0], -p[1]] : m === 1 ? [-p[0], p[1]] : m === 2 ? [p[1], p[0]] : [-p[1], -p[0]];
+        img = shape.map(refl); const lines = ["the x-axis (y = 0)", "the y-axis (x = 0)", "the line y = x", "the line y = −x"];
+        if (m === 0) { ctx.strokeStyle = css("--bad"); ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.stroke(); }
+        else if (m === 1) { ctx.strokeStyle = css("--bad"); ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke(); }
+        else if (m === 2) { ctx.strokeStyle = css("--bad"); ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(X(-8), Y(-8)); ctx.lineTo(X(8), Y(8)); ctx.stroke(); }
+        else { ctx.strokeStyle = css("--bad"); ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(X(-8), Y(8)); ctx.lineTo(X(8), Y(-8)); ctx.stroke(); }
+        ctx.setLineDash([]);
+        desc = `Reflection in ${lines[m]}. The image is the mirror image: same size, reversed orientation. Each point and its image are equidistant from the mirror line, on a perpendicular to it.`; }
+      else if (ty === 2) { const ang = v.rang * Math.PI / 180, cx0 = v.rcx, cy0 = v.rcy, cos = Math.cos(ang), sin = Math.sin(ang);
+        img = shape.map(([x, y]) => { const dx = x - cx0, dy = y - cy0; return [cx0 + dx * cos - dy * sin, cy0 + dx * sin + dy * cos]; });
+        dot(ctx, X(cx0), Y(cy0), 5, css("--bad")); text(ctx, "centre", X(cx0) + 8, Y(cy0) - 8, { size: 11, color: css("--bad") });
+        desc = `Rotation of ${Math.abs(v.rang)}° ${v.rang >= 0 ? "anticlockwise" : "clockwise"} about (${cx0}, ${cy0}). Size and shape are unchanged; every point turns through the same angle about the centre.`; }
+      else { const k = v.k, cx0 = v.ecx, cy0 = v.ecy; img = shape.map(([x, y]) => [cx0 + k * (x - cx0), cy0 + k * (y - cy0)]);
+        dot(ctx, X(cx0), Y(cy0), 5, css("--bad")); text(ctx, "centre", X(cx0) + 8, Y(cy0) - 8, { size: 11, color: css("--bad") });
+        shape.forEach(([x, y]) => { ctx.strokeStyle = css("--muted"); ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(cx0), Y(cy0)); ctx.lineTo(X(cx0 + k * (x - cx0)), Y(cy0 + k * (y - cy0))); ctx.stroke(); ctx.setLineDash([]); });
+        desc = `Enlargement, scale factor ${k}, centre (${cx0}, ${cy0}). ${k < 0 ? "A negative scale factor puts the image on the opposite side of the centre, inverted." : Math.abs(k) < 1 ? "A fractional scale factor makes the image smaller." : "The image is larger than the object."} Distances from the centre are multiplied by ${k}; area is multiplied by ${(k * k).toFixed(2)}.`; }
+      drawShape(img, css("--bad"), false);
+      text(ctx, "object", X(shape[0][0]) - 10, Y(shape[0][1]) + 18, { size: 11, color: css("--maths"), align: "right" });
+      const msg = desc; if (msg !== last) { out.innerHTML = msg; last = msg; DEMOS._lib.typeset(out); }
+    });
+  };
+
+  // ---------- Interactive: vector arithmetic and the triangle law ----------
+  DEMOS.vectors = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 320);
+    const v = DEMOS._lib.controls(root, [{ key: "ax", label: "a: x", min: -5, max: 5, step: 1, value: 4 }, { key: "ay", label: "a: y", min: -5, max: 5, step: 1, value: 1 }, { key: "bx", label: "b: x", min: -5, max: 5, step: 1, value: -1 }, { key: "by", label: "b: y", min: -5, max: 5, step: 1, value: 3 }, { key: "m", label: "m (for ma + nb)", min: -3, max: 3, step: .5, value: 1 }, { key: "n", label: "n (for ma + nb)", min: -3, max: 3, step: .5, value: 1 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const s = Math.min(w, h) / 14, ox = w * .32, oy = h / 2, X = x => ox + x * s, Y = y => oy - y * s;
+      ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; for (let i = -7; i <= 7; i++) { ctx.beginPath(); ctx.moveTo(X(i), 0); ctx.lineTo(X(i), h); ctx.moveTo(0, Y(i)); ctx.lineTo(w * .62, Y(i)); ctx.stroke(); }
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w * .62, oy); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke();
+      const a = [v.ax, v.ay], b = [v.bx, v.by], m = v.m, n = v.n, r = [m * a[0] + n * b[0], m * a[1] + n * b[1]];
+      arrow(ctx, X(0), Y(0), X(a[0]), Y(a[1]), css("--maths"), 3); text(ctx, "a", X(a[0] / 2) + 8, Y(a[1] / 2) - 6, { size: 13, weight: 700, color: css("--maths") });
+      arrow(ctx, X(a[0]), Y(a[1]), X(a[0] + b[0]), Y(a[1] + b[1]), css("--physics"), 3); text(ctx, "b", X(a[0] + b[0] / 2) + 8, Y(a[1] + b[1] / 2) - 6, { size: 13, weight: 700, color: css("--physics") });
+      arrow(ctx, X(0), Y(0), X(a[0] + b[0]), Y(a[1] + b[1]), css("--bad"), 2.5); text(ctx, "a + b", X((a[0] + b[0]) / 2) - 10, Y((a[1] + b[1]) / 2) + 18, { size: 12, weight: 700, color: css("--bad") });
+      // ma + nb shown as faint separate arrow from origin
+      ctx.setLineDash([5, 4]); arrow(ctx, X(0), Y(0), X(r[0]), Y(r[1]), col, 3); ctx.setLineDash([]);
+      text(ctx, "ma + nb", X(r[0]) + 8, Y(r[1]) + 14, { size: 12, weight: 700, color: col });
+      const mag = (p) => Math.hypot(p[0], p[1]).toFixed(2);
+      const msg = `$\\mathbf{a}=\\begin{pmatrix}${a[0]}\\\\${a[1]}\\end{pmatrix}$, $\\mathbf{b}=\\begin{pmatrix}${b[0]}\\\\${b[1]}\\end{pmatrix}$. Triangle law: $\\mathbf{a}+\\mathbf{b}=\\begin{pmatrix}${a[0] + b[0]}\\\\${a[1] + b[1]}\\end{pmatrix}$ (travel along a, then along b). $|\\mathbf{a}|=${mag(a)}$. ${m}\\mathbf{a}+${n}\\mathbf{b}=\\begin{pmatrix}${r[0].toFixed(1)}\\\\${r[1].toFixed(1)}\\end{pmatrix}$ (dashed), magnitude ${mag(r)}.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; DEMOS._lib.typeset(out); }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
