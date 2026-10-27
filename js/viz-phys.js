@@ -212,4 +212,61 @@
       if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
     });
   };
+
+  // ---------- States of matter: three boxes of particles ----------
+  const rnd = (i, k) => Math.abs(Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1;
+  V.particleStates = (host) => mount(host, (ctx, W, H, t) => {
+    const cols = [cs("--maths"), cs("--chem"), cs("--physics")], bw = (W - 80) / 3, bh = H - 70, y0 = 30, r = Math.min(9, bw / 22);
+    ["solid", "liquid", "gas"].forEach((name, k) => {
+      const x0 = 20 + k * (bw + 20); ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 2; ctx.strokeRect(x0, y0, bw, bh);
+      text(ctx, name, x0 + bw / 2, H - 14, { size: 14, weight: 700, align: "center", color: cols[k] });
+      if (k === 0) { const n = 7, d = 2 * r + 2, ox = x0 + bw / 2 - n * d / 2 + r, oy = y0 + bh - n * d + r - 4;
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const q = i * n + j; dot(ctx, ox + i * d + 1.6 * Math.sin(t * 19 + q), oy + j * d + 1.6 * Math.cos(t * 23 + q * 1.7), r, cols[0]); } }
+      if (k === 1) { const n = 40; for (let i = 0; i < n; i++) { const row = Math.floor(i / 8), col = i % 8, d = 2 * r + 3, drift = (t * (12 + 8 * rnd(i, 2)) + rnd(i, 1) * bw) % (bw - 2 * r);
+          dot(ctx, x0 + r + ((col * d + drift) % (bw - 2 * r)), y0 + bh - r - 2 - row * (d - 1) + 2 * Math.sin(t * 6 + i), r, cols[1]); } }
+      if (k === 2) { for (let i = 0; i < 12; i++) { const vx = 70 + 60 * rnd(i, 3), vy = 60 + 60 * rnd(i, 4), L = bw - 2 * r, M = bh - 2 * r;
+          const px = (rnd(i, 5) * L + vx * t) % (2 * L), py = (rnd(i, 6) * M + vy * t) % (2 * M);
+          dot(ctx, x0 + r + (px > L ? 2 * L - px : px), y0 + r + (py > M ? 2 * M - py : py), r, cols[2]); } }
+    });
+  }, { h: 280, period: 12, caption: "Solid: vibrate in fixed places. Liquid: close together but slide past each other. Gas: far apart, fast, random." });
+
+  // ---------- Brownian motion ----------
+  V.brownian = (host) => mount(host, (ctx, W, H, t) => {
+    const c = cs("--physics"), cx = W / 2, cy = H / 2;
+    // random walk path from seeded steps
+    const steps = Math.floor(t * 6), pts = [[0, 0]]; for (let i = 1; i <= steps; i++) { const a = rnd(i, 9) * Math.PI * 2, L = 6 + 14 * rnd(i, 8); pts.push([pts[i - 1][0] + L * Math.cos(a), pts[i - 1][1] + L * Math.sin(a)]); }
+    for (let i = 0; i < 160; i++) { const sp = 80 + 120 * rnd(i, 1), a = rnd(i, 2) * 6.283, x = ((rnd(i, 3) * W + Math.cos(a) * sp * t) % W + W) % W, y = ((rnd(i, 4) * H + Math.sin(a) * sp * t) % H + H) % H; dot(ctx, x, y, 1.8, cs("--muted")); }
+    ctx.strokeStyle = c + "88"; ctx.lineWidth = 1.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(cx + x, cy + y) : ctx.moveTo(cx + x, cy + y)); ctx.stroke();
+    const [lx, ly] = pts[pts.length - 1]; dot(ctx, cx + lx, cy + ly, 11, c, 16);
+    text(ctx, "smoke particle (big, visible)", cx + lx + 16, cy + ly - 10, { size: 12, color: c, weight: 600 });
+    text(ctx, "air molecules (tiny, fast, invisible)", 14, 20, { size: 12, color: cs("--muted") });
+  }, { h: 300, period: 14, caption: "The smoke particle jiggles randomly because it is hit unevenly by fast-moving air molecules" });
+
+  // ---------- Interactive: gas in a cylinder ----------
+  DEMOS.gas = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const v = controls(root, [
+      { key: "T", label: "temperature (°C)", min: -100, max: 300, step: 10, value: 20 },
+      { key: "V", label: "volume (cm³)", min: 40, max: 200, step: 10, value: 100 }
+    ]);
+    const out = readout(root); let last = "", parts = Array.from({ length: 36 }, (_, i) => ({ x: rnd(i, 1), y: rnd(i, 2), a: rnd(i, 3) * 6.283 })), hits = [], tPrev = 0;
+    return loop((tt) => {
+      size(); const w = W(), h = H(), dt = Math.min(.05, tt - tPrev); tPrev = tt; ctx.clearRect(0, 0, w, h);
+      const TK = v.T + 273, x0 = 40, y0 = 30, bh = h - 70, bwMax = Math.min(w - 260, 460), bw = bwMax * v.V / 200, sp = 40 * Math.sqrt(TK / 293) * 3;
+      ctx.fillStyle = css("--line"); ctx.fillRect(x0 + bw, y0 - 6, 14, bh + 12); ctx.fillRect(x0 + bw + 14, y0 + bh / 2 - 5, 60, 10);
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0 + bwMax + 40, y0); ctx.lineTo(x0, y0); ctx.lineTo(x0, y0 + bh); ctx.lineTo(x0 + bwMax + 40, y0 + bh); ctx.stroke();
+      let n = 0; parts.forEach(p => { let X = x0 + 6 + p.x * (bw - 12), Y = y0 + 6 + p.y * (bh - 12);
+        X += Math.cos(p.a) * sp * dt; Y += Math.sin(p.a) * sp * dt;
+        if (X < x0 + 6 || X > x0 + bw - 6) { p.a = Math.PI - p.a; X = Math.max(x0 + 6, Math.min(x0 + bw - 6, X)); n++; hits.push(tt); }
+        if (Y < y0 + 6 || Y > y0 + bh - 6) { p.a = -p.a; Y = Math.max(y0 + 6, Math.min(y0 + bh - 6, Y)); n++; hits.push(tt); }
+        p.x = (X - x0 - 6) / (bw - 12); p.y = (Y - y0 - 6) / (bh - 12); dot(ctx, X, Y, 5, col); });
+      hits = hits.filter(q => tt - q < 1);
+      const pr = 100 * (TK / 293) * (100 / v.V), gx = w - 120, gy = h / 2 - 10;
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(gx, gy, 52, Math.PI * .75, Math.PI * 2.25); ctx.stroke();
+      const ang = Math.PI * .75 + Math.min(1, pr / 400) * Math.PI * 1.5; ctx.strokeStyle = css("--bad"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + 44 * Math.cos(ang), gy + 44 * Math.sin(ang)); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = "600 14px Inter, sans-serif"; ctx.textAlign = "center"; ctx.fillText(pr.toFixed(0) + " kPa", gx, gy + 32); ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = css("--muted"); ctx.fillText("wall hits/s: " + hits.length, gx, gy + 72); ctx.textAlign = "left";
+      const txt = `$T=${v.T}+273=${TK}$ K. Pressure $\\approx ${fix(pr, 0)}$ kPa. Hotter → particles faster → more frequent, harder collisions → higher pressure. Smaller volume → particles hit the walls more often → higher pressure. At constant temperature $pV$ stays constant: here $pV=${fix(pr * v.V / 1000, 1)}\\times10^3$ kPa cm³.`;
+      if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
+    });
+  };
 })();
