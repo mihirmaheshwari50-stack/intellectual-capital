@@ -279,5 +279,87 @@
     return () => {};
   };
 
+  // ---------- Blast furnace ----------
+  V.blastFurnace = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W * .36, top = 40, bot = H - 40, tw = 46, mw = 96, bw = 74, yb = bot - 70;
+    const lx = (y) => { const f = (y - top) / (yb - top); return y < yb ? cx - (tw + (mw - tw) * Math.min(1, f * 1.4)) + (f > .72 ? (f - .72) / .28 * (mw - bw) : 0) : cx - bw; };
+    ctx.beginPath(); for (let y = top; y <= bot; y += 4) ctx.lineTo(lx(y), y); for (let y = bot; y >= top; y -= 4) ctx.lineTo(2 * cx - lx(y), y); ctx.closePath();
+    const g = ctx.createLinearGradient(0, top, 0, bot); g.addColorStop(0, "#f3c56a55"); g.addColorStop(.6, "#f0803a77"); g.addColorStop(1, "#d8402aaa"); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 3; ctx.stroke();
+    // charge falling
+    const cols = ["#7a3b2a", "#222", "#ddd"];
+    for (let i = 0; i < 46; i++) { const ph = (t * .08 + rnd(i, 1)) % 1, y = top + 6 + ph * (yb - top - 10), half = cx - lx(y) - 8, x = cx + (rnd(i, 2) * 2 - 1) * half; ctx.fillStyle = cols[i % 3]; ctx.fillRect(x - 3, y - 3, 6, 6); }
+    // rising CO / CO2
+    for (let i = 0; i < 18; i++) { const ph = (t * .25 + rnd(i, 5)) % 1, y = yb - ph * (yb - top), half = cx - lx(y) - 10, x = cx + Math.sin(t * 2 + i) * half * .7; ctx.globalAlpha = .5 * (1 - ph * .5); dot(ctx, x, y, 3, "#777"); } ctx.globalAlpha = 1;
+    // slag and iron
+    ctx.fillStyle = "#c9b48a"; ctx.fillRect(cx - bw + 2, bot - 38, 2 * bw - 4, 14); ctx.fillStyle = "#ff7a2a"; ctx.fillRect(cx - bw + 2, bot - 24, 2 * bw - 4, 22);
+    // hot air blasts
+    for (const s of [-1, 1]) { const x0 = cx + s * (bw + 46), y = yb + 4; ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2; const ph = (t * 1.5) % 1; arrow(ctx, x0, y, cx + s * (bw + 2), y, cs("--bad")); dot(ctx, x0 + (cx + s * bw - x0) * ph, y, 3, cs("--bad")); }
+    // tap holes
+    arrow(ctx, cx - bw, bot - 31, cx - bw - 40, bot - 31, "#a08a5a"); arrow(ctx, cx + bw, bot - 13, cx + bw + 40, bot - 13, "#ff7a2a");
+    const L = (y, s, c) => text(ctx, s, W * .63, y, { size: 12, color: c || cs("--ink") });
+    text(ctx, "iron ore (hematite), coke, limestone", cx, 24, { size: 12, align: "center", weight: 700 });
+    text(ctx, "slag", cx - bw - 44, bot - 36, { size: 11, align: "right", color: cs("--muted") }); text(ctx, "molten iron", cx + bw + 44, bot - 18, { size: 11, color: "#d0601a", weight: 700 });
+    text(ctx, "hot air", cx - bw - 50, yb - 6, { size: 11, color: cs("--bad") });
+    const k = Math.floor((t / P) * 4) % 4;
+    const R = [["1. Coke burns in hot air (exothermic):", "C + O₂ → CO₂"], ["2. CO₂ reduced by more coke:", "CO₂ + C → 2CO"], ["3. CO reduces the ore:", "Fe₂O₃ + 3CO → 2Fe + 3CO₂"], ["4. Limestone makes slag:", "CaCO₃ → CaO + CO₂", "CaO + SiO₂ → CaSiO₃"]];
+    R.forEach(([a, b, c2], i) => { const y = 56 + i * 52, on = i === k, o = { size: on ? 14 : 13, weight: on ? 700 : 500, color: on ? cs("--ink") : cs("--muted") }; L(y, a, on ? cs("--chem") : cs("--muted")); text(ctx, b, W * .63, y + 18, o); if (c2) text(ctx, c2, W * .63, y + 36, o); });
+  }, { h: 340, period: 12, caption: "The blast furnace: coke, carbon monoxide and limestone turn hematite into molten iron and slag" });
+
+  // ---------- Alloys: layers slide in pure metal but not in an alloy ----------
+  V.alloyLayers = (host) => mount(host, (ctx, W, H, t, P) => {
+    const ph = (t / P) % 1, push = Math.min(1, Math.max(0, (ph - .15) / .4)), r = 13, n = 7;
+    [0, 1].forEach(side => {
+      const x0 = side ? W / 2 + 20 : 30, y0 = 70;
+      for (let row = 0; row < 4; row++) for (let i = 0; i < n; i++) {
+        const big = side && ((row === 1 && i === 3) || (row === 2 && i === 1) || (row === 0 && i === 5));
+        const shift = row < 2 ? (side ? Math.min(push, .12) : push) * 2 * r : 0;
+        const x = x0 + i * 2 * r + r + shift, y = y0 + row * 2 * r + r;
+        dot(ctx, x, y, big ? r * 1.3 : r - 1, big ? cs("--physics") : "#9aa3ad");
+      }
+      if (!side || push < .2) arrow(ctx, x0 - 8 + push * 20, y0 - 18, x0 + 60 + push * 20, y0 - 18, cs("--bad"));
+      text(ctx, side ? "ALLOY: different-sized atoms" : "PURE METAL: regular layers", x0, 34, { size: 13, weight: 700 });
+      text(ctx, side ? "distort the layers: they cannot slide → harder, stronger" : "layers slide over each other easily → malleable, soft", x0, H - 16, { size: 12, color: side ? cs("--physics") : cs("--muted") });
+    });
+  }, { h: 230, period: 5, caption: "Why alloys are harder: atoms of a different size stop the layers sliding" });
+
+  // ---------- Interactive: reactivity series tests ----------
+  DEMOS.reactivity = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const M = [["K", "potassium", 10, "KOH"], ["Na", "sodium", 9, "NaOH"], ["Ca", "calcium", 8, "Ca(OH)₂"], ["Mg", "magnesium", 7, "Mg"], ["Al", "aluminium", 6, "Al"], ["Zn", "zinc", 5, "Zn"], ["Fe", "iron", 4, "Fe"], ["Pb", "lead", 3, "Pb"], ["Cu", "copper", 2, "Cu"], ["Ag", "silver", 1, "Ag"], ["Au", "gold", 0, "Au"]];
+    const salts = [["Mg", "magnesium sulfate", 7, "#ffffff00"], ["Zn", "zinc sulfate", 5, "#ffffff00"], ["Fe", "iron(II) sulfate", 4, "#9cc68a77"], ["Cu", "copper(II) sulfate", 2, "#3b7fd077"], ["Ag", "silver nitrate", 1, "#ffffff00"]];
+    let m = 3, test = 2, sl = 3, t0 = 0;
+    const mk = (opts, cur, cb) => { const d = document.createElement("div"); d.className = "seg wrap"; d.style.marginTop = "10px"; d.innerHTML = opts.map((o, i) => `<button aria-pressed="${i === cur}" data-i="${i}">${o}</button>`).join(""); d.onclick = e => { const b = e.target.closest("button"); if (!b) return; d.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); cb(+b.dataset.i); t0 = performance.now() / 1000; }; root.appendChild(d); return d; };
+    mk(M.map(x => x[0]), m, i => m = i); mk(["cold water", "steam", "dilute HCl", "salt solution"], test, i => { test = i; saltSeg.style.display = i === 3 ? "" : "none"; });
+    const saltSeg = mk(salts.map(s => s[1]), sl, i => sl = i); saltSeg.style.display = "none";
+    const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(), el = tt - t0; ctx.clearRect(0, 0, w, h);
+      const [sym, name, R] = M[m]; let rate = 0, msg = "", liquid = "#9ec5ff33", coat = 0, flame = false, after = null;
+      if (test === 0) { rate = R >= 8 ? (R - 7) / 3 : R === 7 ? .04 : 0; flame = R === 10;
+        msg = R >= 8 ? `${name[0].toUpperCase() + name.slice(1)} reacts ${R === 10 ? "violently (lilac flame)" : R === 9 ? "vigorously" : "steadily, sinking and fizzing"} with cold water: metal + water → metal hydroxide + hydrogen.` : R === 7 ? "Magnesium reacts only very slowly with cold water (a few bubbles after days)." : `${name[0].toUpperCase() + name.slice(1)} does not react with cold water.`; }
+      if (test === 1) { rate = R >= 8 ? 1 : R >= 4 ? (R - 3) / 4 : 0; msg = R >= 8 ? `Too dangerous: ${name} reacts explosively with steam.` : R >= 4 ? `Heated ${name} reacts with steam: metal + steam → metal oxide + hydrogen. ${R === 7 ? "Magnesium burns with a bright white light, leaving white MgO." : R === 6 ? "Aluminium reacts only slowly at first because of its protective oxide layer." : ""}` : `${name[0].toUpperCase() + name.slice(1)} does not react with steam.`; }
+      if (test === 2) { rate = R >= 8 ? 1 : R >= 3 ? (R - 2) / 6 : 0; msg = R >= 8 ? `Too dangerous: ${name} reacts explosively with acid.` : R >= 3 ? `${name[0].toUpperCase() + name.slice(1)} + hydrochloric acid → ${name === "iron" ? "iron(II)" : name} chloride + hydrogen. ${R === 3 ? "Lead reacts only very slowly." : "Faster fizzing means more reactive."}` : `${name[0].toUpperCase() + name.slice(1)} is below hydrogen: no reaction with dilute acid.`; }
+      if (test === 3) { const [ss, sn, SR, sc] = salts[sl]; liquid = sc;
+        if (R >= 8) { msg = `${name[0].toUpperCase() + name.slice(1)} would react with the water instead, so it is not used for displacement.`; rate = .6; }
+        else if (R > SR) { coat = Math.min(1, el / 4); const prod = { Mg: "grey magnesium", Zn: "grey zinc", Fe: "grey iron", Cu: "pink-brown copper", Ag: "silver crystals" }[ss]; after = sc; if (ss === "Cu") liquid = `rgba(59,127,208,${.47 * (1 - coat * .8)})`; if (ss === "Fe") liquid = `rgba(156,198,138,${.47 * (1 - coat * .8)})`; msg = `${sym} is more reactive than ${ss}: it displaces it. ${prod[0].toUpperCase() + prod.slice(1)} coats the ${name}${ss === "Cu" ? " and the blue colour fades" : ""}. The reaction is exothermic.`; }
+        else msg = `${sym} is ${R === SR ? "the same metal" : "less reactive than " + ss}: no displacement reaction.`; }
+      // draw tube
+      const tx = w * .26, ty = 30, th = h - 70;
+      ctx.fillStyle = liquid; ctx.fillRect(tx - 30, ty + th * .3, 60, th * .7 - 30); ctx.beginPath(); ctx.arc(tx, ty + th - 30, 30, 0, Math.PI); ctx.fill();
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(tx - 30, ty); ctx.lineTo(tx - 30, ty + th - 30); ctx.arc(tx, ty + th - 30, 30, Math.PI, 0, true); ctx.lineTo(tx + 30, ty); ctx.stroke();
+      if (test === 1) { ctx.fillStyle = css("--muted"); for (let i = 0; i < 6; i++) { ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(tx - 12 + 6 * Math.sin(tt * 3 + i), ty + th * .3 - 10 - ((tt * 30 + i * 20) % 60), 6, 0, 7); ctx.fill(); } ctx.globalAlpha = 1; text(ctx, "steam", tx + 40, ty + 30, { size: 12, color: css("--muted") }); }
+      const my = ty + th - 40; ctx.fillStyle = "#b8bec6"; ctx.fillRect(tx - 14, my - 30, 28, 34); if (coat) { ctx.fillStyle = salts[sl][0] === "Cu" ? `rgba(184,115,51,${coat})` : `rgba(90,90,90,${coat * .8})`; ctx.fillRect(tx - 15, my - 31, 30, 36); }
+      text(ctx, sym, tx, my - 8, { size: 13, align: "center", weight: 700, color: "#333" });
+      for (let i = 0; i < 40 * rate; i++) { const ph = (tt * (0.6 + rate) + rnd(i, m)) % 1; ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(tx - 20 + rnd(i * 7 + 1, 13) * 40, my - 30 - ph * (th * .55), 2 + 2 * rnd(i, 4), 0, 7); ctx.stroke(); }
+      if (flame) for (let f = 0; f < 4; f++) { ctx.fillStyle = "#b07ae099"; ctx.beginPath(); ctx.ellipse(tx + (f - 1.5) * 6, ty + th * .3 - 18, 5, 14 + 5 * Math.sin(tt * 13 + f), 0, 0, 7); ctx.fill(); }
+      // series ladder
+      const lx = w * .58; text(ctx, "reactivity series", lx, 22, { size: 12, weight: 700, color: css("--muted") });
+      const ser = ["K", "Na", "Ca", "Mg", "Al", "(C)", "Zn", "Fe", "Pb", "(H)", "Cu", "Ag", "Au"], sh = (h - 46) / ser.length;
+      ser.forEach((s, i) => { const on = s === sym, y = 40 + i * sh; if (on) { ctx.fillStyle = col + "33"; ctx.fillRect(lx - 6, y - sh * .7, 120, sh); } text(ctx, s, lx, y, { size: 12, weight: on ? 700 : 500, color: s[0] === "(" ? css("--muted") : on ? col : css("--ink") }); });
+      arrow(ctx, lx + 70, 40, lx + 70, h - 20, css("--muted")); text(ctx, "less reactive", lx + 80, h - 24, { size: 11, color: css("--muted") }); text(ctx, "more reactive", lx + 80, 40, { size: 11, color: css("--muted") });
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._chem = { rnd, bounce };
 })();
