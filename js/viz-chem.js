@@ -145,5 +145,20 @@
       if (txt !== last) { out.innerHTML = txt; last = txt; }
     });
   };
+
+  // ---------- Redox: zinc in copper(II) sulfate — electron transfer ----------
+  V.redox = (host) => mount(host, (ctx, W, H, t, P) => {
+    const ph = t / P, zx = W * .3, cx = W * .66, y = H / 2, k = clamp((ph - .15) / .45);
+    // zinc atom -> Zn2+
+    const zr = 26 - 6 * k; ctx.fillStyle = cs("--muted"); ctx.beginPath(); ctx.arc(zx, y, zr, 0, 7); ctx.fill();
+    text(ctx, k < .5 ? "Zn" : "Zn²⁺", zx, y + 5, { size: 15, align: "center", weight: 700, color: "#fff" });
+    // copper ion -> Cu atom
+    ctx.fillStyle = k < .5 ? cs("--maths") : "#b87333"; ctx.beginPath(); ctx.arc(cx, y, 20 + 6 * k, 0, 7); ctx.fill();
+    text(ctx, k < .5 ? "Cu²⁺" : "Cu", cx, y + 5, { size: 15, align: "center", weight: 700, color: "#fff" });
+    for (let e = 0; e < 2; e++) { const f = clamp(k * 1.1 - e * .1), x = zx + 34 + (cx - zx - 68) * f, yy = y - 40 - 30 * Math.sin(f * Math.PI) + e * 14; dot(ctx, x, yy, 5, cs("--physics"), 10); text(ctx, "e⁻", x + 8, yy - 6, { size: 11, color: cs("--physics") }); }
+    if (k > .9) { text(ctx, "Zn → Zn²⁺ + 2e⁻", zx, y + 60, { size: 13, align: "center", weight: 700 }); text(ctx, "loses electrons: OXIDISED", zx, y + 78, { size: 12, align: "center", color: cs("--bad"), weight: 600 }); text(ctx, "(zinc is the reducing agent)", zx, y + 94, { size: 11, align: "center", color: cs("--muted") });
+      text(ctx, "Cu²⁺ + 2e⁻ → Cu", cx, y + 60, { size: 13, align: "center", weight: 700 }); text(ctx, "gains electrons: REDUCED", cx, y + 78, { size: 12, align: "center", color: cs("--maths"), weight: 600 }); text(ctx, "(Cu²⁺ is the oxidising agent)", cx, y + 94, { size: 11, align: "center", color: cs("--muted") }); }
+    text(ctx, "Zn + CuSO₄ → ZnSO₄ + Cu: blue solution fades, pink copper forms on the zinc", 16, 22, { size: 12, weight: 600 });
+  }, { h: 280, period: 6, caption: "Oxidation and reduction always happen together: the electrons lost by one are gained by the other" });
   V._chem = { rnd, bounce };
 })();
