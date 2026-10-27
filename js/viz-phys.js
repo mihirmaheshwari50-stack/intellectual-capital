@@ -616,4 +616,84 @@
       if (Math.floor(t * 4) !== Math.floor((t - dt) * 4)) { out.innerHTML = txt; last = txt; }
     });
   };
+
+  // ---------- Seasons: Earth orbiting with a tilted axis ----------
+  V.seasons = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W / 2, cy = H / 2 + 4, rx = Math.min(W * .38, 300), ry = H * .3, a = t / P * Math.PI * 2;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.stroke();
+    dot(ctx, cx, cy, 26, "#f6b73c", 30); text(ctx, "Sun", cx, cy + 5, { size: 12, align: "center", weight: 700, color: "#7a4a00" });
+    const ex = cx + rx * Math.cos(a), ey = cy + ry * Math.sin(a), tilt = 23.5 * Math.PI / 180, R = 18;
+    ctx.save(); ctx.translate(ex, ey); ctx.fillStyle = cs("--maths"); ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
+    // night side shading (away from the Sun)
+    const toSun = Math.atan2(cy - ey, cx - ex); ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.beginPath(); ctx.arc(0, 0, R, toSun + Math.PI / 2, toSun + 3 * Math.PI / 2); ctx.fill();
+    ctx.rotate(-tilt); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -R - 10); ctx.lineTo(0, R + 10); ctx.stroke(); text(ctx, "N", -4, -R - 13, { size: 10, weight: 700 }); ctx.restore();
+    // which hemisphere leans towards the sun: north pole tips to the right (+x) in our view
+    const northSummer = Math.cos(a) < 0;
+    const lab = Math.abs(Math.cos(a)) > .7 ? (northSummer ? "June: N hemisphere tilted towards the Sun → summer in the north" : "December: N hemisphere tilted away → winter in the north") : "March / September: neither hemisphere tilted towards the Sun → spring / autumn";
+    text(ctx, lab, 16, 22, { size: 13, weight: 600 });
+    text(ctx, "the axis always points the same way in space (towards the Pole Star)", 16, H - 10, { size: 12, color: cs("--muted") });
+  }, { h: 320, period: 12, caption: "One orbit takes about 365 days. The tilt, not the distance from the Sun, causes the seasons." });
+
+  // ---------- Phases of the Moon ----------
+  V.moonPhases = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W * .38, cy = H / 2, R = Math.min(110, H * .36), a = t / P * Math.PI * 2;
+    for (let i = 0; i < 6; i++) arrow(ctx, 20, 40 + i * (H - 80) / 5, 60, 40 + i * (H - 80) / 5, "#f6b73c", 2); text(ctx, "sunlight", 14, 24, { size: 11, color: "#c98a00", weight: 600 });
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+    dot(ctx, cx, cy, 16, cs("--maths")); text(ctx, "Earth", cx, cy + 32, { size: 11, align: "center" });
+    const mx = cx - R * Math.cos(a), my = cy - R * Math.sin(a), r = 12;
+    ctx.fillStyle = "#ddd"; ctx.beginPath(); ctx.arc(mx, my, r, 0, 7); ctx.fill(); ctx.fillStyle = "#333"; ctx.beginPath(); ctx.arc(mx, my, r, -Math.PI / 2, Math.PI / 2); ctx.fill();
+    // as seen from Earth
+    const vx = W * .8, vy = cy, vr = 54, k = Math.cos(a); // k=1 new moon, -1 full
+    ctx.fillStyle = "#333"; ctx.beginPath(); ctx.arc(vx, vy, vr, 0, 7); ctx.fill();
+    ctx.fillStyle = "#eee"; ctx.beginPath(); const waxing = Math.sin(a) > 0;
+    ctx.arc(vx, vy, vr, -Math.PI / 2, Math.PI / 2, !waxing); ctx.ellipse(vx, vy, Math.abs(k) * vr, vr, 0, Math.PI / 2, -Math.PI / 2, waxing ? (k > 0) : !(k > 0)); ctx.fill();
+    const names = ["new moon", "waxing crescent", "first quarter", "waxing gibbous", "full moon", "waning gibbous", "last quarter", "waning crescent"], idx = Math.round(((a / (2 * Math.PI)) % 1) * 8) % 8;
+    text(ctx, "seen from Earth:", vx, vy - vr - 26, { size: 12, align: "center", color: cs("--muted") }); text(ctx, names[idx], vx, vy + vr + 26, { size: 14, align: "center", weight: 700 });
+    text(ctx, "half the Moon is always lit; we see different amounts of the lit half", W - 14, H - 10, { size: 11, align: "right", color: cs("--muted") });
+  }, { h: 300, period: 14, caption: "The Moon orbits the Earth in about a month (27.3 days; 29.5 days new moon to new moon)" });
+
+  // ---------- Elliptical orbit: faster near the Sun ----------
+  V.ellipse = (host) => mount(host, (ctx, W, H, t, P) => {
+    const a = Math.min(W * .4, 280), e = .7, b = a * Math.sqrt(1 - e * e), cx = W / 2, cy = H / 2, fx = cx + a * e;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, a, b, 0, 0, 7); ctx.stroke(); dot(ctx, fx, cy, 14, "#f6b73c", 20);
+    // solve Kepler's equation for mean anomaly M
+    const M = t / P * 2 * Math.PI; let E = M; for (let i = 0; i < 8; i++) E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    const x = cx + a * Math.cos(E), y = cy + b * Math.sin(E), r = Math.hypot(x - fx, y - cy), v = Math.sqrt(2 / r - 1 / a);
+    // ghost trail at equal time steps
+    for (let k = 1; k <= 12; k++) { const Mk = M - k * .18; let Ek = Mk; for (let i = 0; i < 8; i++) Ek = Ek - (Ek - e * Math.sin(Ek) - Mk) / (1 - e * Math.cos(Ek)); alpha(ctx, .5 - k * .035, () => dot(ctx, cx + a * Math.cos(Ek), cy + b * Math.sin(Ek), 4, cs("--physics"))); }
+    dot(ctx, x, y, 9, cs("--physics"), 12);
+    const sp = v * 22; text(ctx, "speed", 16, 24, { size: 12, color: cs("--muted") }); ctx.fillStyle = cs("--physics"); ctx.fillRect(66, 14, sp * 20, 12);
+    text(ctx, r < a * .6 ? "close to the Sun: fast (gravitational PE → kinetic)" : r > a * 1.4 ? "far from the Sun: slow (kinetic → gravitational PE)" : "", 16, H - 12, { size: 13, weight: 600 });
+    text(ctx, "Sun at a focus, not the centre", fx, cy + 34, { size: 11, color: cs("--muted"), align: "center" });
+  }, { h: 300, period: 8, caption: "A comet in an elliptical orbit: dots show positions at equal time intervals" });
+
+  // ---------- Redshift: expanding universe ----------
+  V.redshift = (host) => mount(host, (ctx, W, H, t, P) => {
+    const s = 1 + .6 * (t / P), cx = W * .3, cy = H / 2 - 20;
+    for (let i = 0; i < 18; i++) { const gx = (rnd(i, 1) - .5) * 220, gy = (rnd(i, 2) - .5) * 160; dot(ctx, cx + gx * s, cy + gy * s, 3 + rnd(i, 3) * 3, i === 0 ? cs("--physics") : cs("--muted")); }
+    dot(ctx, cx, cy, 5, cs("--maths")); text(ctx, "us", cx + 8, cy - 6, { size: 11, color: cs("--maths") });
+    // spectrum bars
+    const sx = W * .6, sw = W * .36, y1 = 60, y2 = 150, lines = [.2, .45, .55, .8];
+    const grad = (y, shift, label) => { for (let i = 0; i < sw; i++) { const hue = 270 - 270 * i / sw; ctx.fillStyle = `hsl(${hue},80%,55%)`; ctx.fillRect(sx + i, y, 1, 34); } lines.forEach(f => { const x = sx + Math.min(sw - 2, f * sw * shift); ctx.fillStyle = "#111"; ctx.fillRect(x, y, 3, 34); }); text(ctx, label, sx, y - 8, { size: 12, weight: 600 }); };
+    grad(y1, 1, "absorption lines in light from the Sun (lab)"); grad(y2, 1 + .25 * (s - 1), "distant galaxy: lines shifted to the red");
+    text(ctx, "space stretches → wavelengths stretch", sx, y2 + 64, { size: 12, color: cs("--muted") });
+  }, { h: 260, period: 6, caption: "Further galaxies move away faster, so their light is redshifted more" });
+
+  // ---------- Interactive: Hubble's law ----------
+  DEMOS.hubble = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    const v = controls(root, [{ key: "H", label: "Hubble constant H₀ (×10⁻¹⁸ /s)", min: 1.5, max: 3, step: .1, value: 2.2 }]);
+    const out = readout(root); let last = "";
+    const gal = Array.from({ length: 14 }, (_, i) => [.1 + rnd(i, 1) * .9, (rnd(i, 2) - .5) * .18]);
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const gx = 60, gy = 20, gw = w - 90, gh = h - 60, dmax = 2e25, vmax = 6e7;
+      ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText("recession speed v", gx + 6, gy + 10); ctx.fillText("distance d →", gx + gw - 80, gy + gh + 18);
+      const Hs = v.H * 1e-18; ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh - Hs * dmax / vmax * gh); ctx.stroke();
+      gal.forEach(([f, n]) => { const d = f * dmax, vv = 2.2e-18 * d * (1 + n); dot(ctx, gx + f * gw, gy + gh - vv / vmax * gh, 5, css("--ink")); });
+      const age = 1 / Hs, yrs = age / 3.15e7;
+      const txt = `$H_0=\\dfrac{v}{d}$ is the gradient. Age of the Universe $\\approx\\dfrac{1}{H_0}=\\dfrac{1}{${fix(v.H, 1)}\\times10^{-18}}=${fix(age / 1e17, 1)}\\times10^{17}$ s $\\approx ${fix(yrs / 1e9, 1)}$ billion years. With $H_0=2.2\\times10^{-18}$ /s this gives about 14 billion years. The dots are measured galaxies.`;
+      if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
+    });
+  };
 })();
