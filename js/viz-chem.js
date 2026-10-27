@@ -72,5 +72,46 @@
     root.appendChild(segEl); const out = readout(root); let last = -1;
     return loop((tt) => { size(); ctx.clearRect(0, 0, W(), H()); cell(ctx, W(), H(), tt, SYS[k].o); if (k !== last) { out.innerHTML = SYS[k].txt; typeset(out); last = k; } });
   };
+
+  // ---------- Bond breaking then making: H2 + Cl2 -> 2HCl ----------
+  V.bondEnergy = (host) => mount(host, (ctx, W, H, t, P) => {
+    const ph = t / P, gx = 40, gw = W - 80, base = H - 50, sc = (H - 110) / 700;
+    const lv = { R: base - 300 * sc, A: base - (300 + 679) * sc + 0, P: base - (300 - 184) * sc };
+    // levels relative: reactants 0, atoms +679 (436+243), products -184
+    const Y = (e) => base - 120 * sc - 0 - (e + 184) * sc * .55 - 40;
+    const yR = Y(0), yA = Y(679), yP = Y(-185), x1 = gx + gw * .08, x2 = gx + gw * .42, x3 = gx + gw * .76;
+    const lvl = (x, y, lab, c) => { ctx.strokeStyle = c; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + gw * .18, y); ctx.stroke(); text(ctx, lab, x + gw * .09, y - 8, { size: 12, align: "center", weight: 700, color: c }); };
+    lvl(x1, yR, "H₂ + Cl₂", cs("--ink")); if (ph > .15) lvl(x2, yA, "2H + 2Cl (atoms)", cs("--muted")); if (ph > .55) lvl(x3, yP, "2HCl", cs("--chem"));
+    if (ph > .15) { const k = clamp((ph - .15) / .25); arrow(ctx, x1 + gw * .18, yR, x1 + gw * .18 + (x2 - x1 - gw * .18) * k, yR + (yA - yR) * k, cs("--bad"), 3); if (k > .9) text(ctx, "break bonds: +679 kJ", (x1 + gw * .18 + x2) / 2 - 10, (yR + yA) / 2, { size: 12, color: cs("--bad"), weight: 600, align: "right" }); text(ctx, "(endothermic)", (x1 + gw * .18 + x2) / 2 - 10, (yR + yA) / 2 + 15, { size: 11, color: cs("--bad"), align: "right" }); }
+    if (ph > .55) { const k = clamp((ph - .55) / .25); arrow(ctx, x2 + gw * .18, yA, x2 + gw * .18 + (x3 - x2 - gw * .18) * k, yA + (yP - yA) * k, cs("--chem"), 3); if (k > .9) text(ctx, "make bonds: −864 kJ (exothermic)", (x2 + x3) / 2 + 60, (yA + yP) / 2 - 20, { size: 12, color: cs("--chem"), weight: 600 }); }
+    if (ph > .85) { ctx.strokeStyle = cs("--maths"); ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x1 + gw * .18, yR); ctx.lineTo(x3 + gw * .2, yR); ctx.stroke(); ctx.setLineDash([]); arrow(ctx, x3 + gw * .2, yR, x3 + gw * .2, yP, cs("--maths"), 2); text(ctx, "ΔH = 679 − 864 = −185 kJ/mol", x3 + gw * .2 - 4, yP + 22, { size: 13, weight: 700, color: cs("--maths"), align: "right" }); }
+    text(ctx, "energy", 12, 20, { size: 12, color: cs("--muted") });
+  }, { h: 320, period: 9, caption: "More energy is released making the new bonds than is taken in breaking the old ones: exothermic" });
+
+  // ---------- Interactive: bond energy calculator ----------
+  const BE = { "H–H": 436, "Cl–Cl": 243, "H–Cl": 432, "O=O": 498, "O–H": 464, "C–H": 413, "C=O": 805, "N≡N": 945, "N–H": 391, "C=C": 612, "C–C": 347, "Br–Br": 193, "C–Br": 290 };
+  const RX = [
+    { n: "H₂ + Cl₂ → 2HCl", br: [["H–H", 1], ["Cl–Cl", 1]], mk: [["H–Cl", 2]] },
+    { n: "2H₂ + O₂ → 2H₂O", br: [["H–H", 2], ["O=O", 1]], mk: [["O–H", 4]] },
+    { n: "CH₄ + 2O₂ → CO₂ + 2H₂O", br: [["C–H", 4], ["O=O", 2]], mk: [["C=O", 2], ["O–H", 4]] },
+    { n: "N₂ + 3H₂ → 2NH₃", br: [["N≡N", 1], ["H–H", 3]], mk: [["N–H", 6]] },
+    { n: "C₂H₄ + Br₂ → C₂H₄Br₂", br: [["C=C", 1], ["Br–Br", 1]], mk: [["C–C", 1], ["C–Br", 2]] },
+    { n: "2NH₃ → N₂ + 3H₂", br: [["N–H", 6]], mk: [["N≡N", 1], ["H–H", 3]] }
+  ];
+  DEMOS.bondenergy = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 260); let k = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = RX.map((x, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${x.n}</button>`).join("");
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; k = +bt.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); };
+    root.appendChild(segEl); const out = readout(root); let last = -1;
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const r = RX[k], inE = r.br.reduce((a, [b, n]) => a + BE[b] * n, 0), outE = r.mk.reduce((a, [b, n]) => a + BE[b] * n, 0), dH = inE - outE;
+      const mx = Math.max(inE, outE), bw = (w - 120) / 2, sc = (h - 60) / mx;
+      ctx.fillStyle = css("--bad"); ctx.fillRect(60, h - 30 - inE * sc, bw * .6, inE * sc); ctx.fillStyle = css("--chem"); ctx.fillRect(60 + bw, h - 30 - outE * sc, bw * .6, outE * sc);
+      ctx.fillStyle = css("--ink"); ctx.font = "600 13px Inter, sans-serif"; ctx.fillText("bonds broken: +" + inE + " kJ", 60, h - 36 - inE * sc); ctx.fillText("bonds made: −" + outE + " kJ", 60 + bw, h - 36 - outE * sc);
+      if (k !== last) { const list = (a) => a.map(([b, n]) => `${n} × ${b} (${BE[b]})`).join(" + ");
+        out.innerHTML = `Broken: ${list(r.br)} = <b>${inE}</b> kJ. Made: ${list(r.mk)} = <b>${outE}</b> kJ. $\\Delta H = ${inE} - ${outE} = ${dH > 0 ? "+" : ""}${dH}$ kJ/mol: <b>${dH < 0 ? "exothermic" : "endothermic"}</b>.`; typeset(out); last = k; }
+    });
+  };
   V._chem = { rnd, bounce };
 })();
