@@ -23,9 +23,20 @@
 
   // ---------- helpers ----------
   const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
-  const math = (node) => window.renderMathInElement && renderMathInElement(node, {
+  // "\$" outside maths is a currency sign: wrap it so auto-render leaves it alone (inside $…$ it stays as KaTeX's \$)
+  const currency = (node) => {
+    const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), hits = [];
+    while (w.nextNode()) if (w.currentNode.nodeValue.includes("\\$") && !w.currentNode.parentElement.closest(".katex,.nomath,textarea,script,svg")) hits.push(w.currentNode);
+    hits.forEach(n => { const v = n.nodeValue, frag = document.createDocumentFragment(); let inMath = false, buf = "";
+      for (let i = 0; i < v.length; i++) {
+        if (v[i] === "\\" && v[i + 1] === "$") { if (inMath) buf += "\\$"; else { frag.append(buf); buf = ""; const sp = document.createElement("span"); sp.className = "nomath"; sp.textContent = "$"; frag.append(sp); } i++; continue; }
+        if (v[i] === "$") inMath = !inMath; buf += v[i];
+      }
+      frag.append(buf); n.replaceWith(frag); });
+  };
+  const math = (node) => window.renderMathInElement && (currency(node), renderMathInElement(node, {
     delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }], ignoredClasses: ["nomath"], throwOnError: false
-  });
+  }));
   const topic = (id) => TOPICS.find(t => t.id === id);
   const subjColor = (s) => SUBJECTS[s].color;
   function reveal(root) {

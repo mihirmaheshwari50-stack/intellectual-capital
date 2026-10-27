@@ -169,7 +169,7 @@
       ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke();
       const line = (m, c, colr) => { ctx.strokeStyle = colr; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(-20), Y(m * -20 + c)); ctx.lineTo(X(20), Y(m * 20 + c)); ctx.stroke(); };
       line(v.m1, v.c1, css("--maths")); line(v.m2, v.c2, css("--physics"));
-      const f = n => (Math.round(n * 100) / 100).toString(), eq1 = `y = ${f(v.m1)}x ${v.c1 < 0 ? "− " + f(-v.c1) : "+ " + f(v.c1)}`, eq2 = `y = ${f(v.m2)}x ${v.c2 < 0 ? "− " + f(-v.c2) : "+ " + f(v.c2)}`;
+      const f = n => (Math.round(n * 100) / 100).toString().replace("-", "−"), g = m => m === 1 ? "" : m === -1 ? "−" : f(m), eq1 = `y = ${g(v.m1)}x ${v.c1 < 0 ? "− " + f(-v.c1) : "+ " + f(v.c1)}`, eq2 = `y = ${g(v.m2)}x ${v.c2 < 0 ? "− " + f(-v.c2) : "+ " + f(v.c2)}`;
       let msg;
       if (v.m1 === v.m2) msg = `${eq1} and ${eq2} have the same gradient: the lines are <b>parallel</b>${v.c1 === v.c2 ? " (in fact identical: infinitely many solutions)" : ", so there is <b>no solution</b>"}.`;
       else { const x = (v.c2 - v.c1) / (v.m1 - v.m2), y = v.m1 * x + v.c1; dot(ctx, X(x), Y(y), 7, css("--bad")); text(ctx, `(${f(x)}, ${f(y)})`, X(x) + 10, Y(y) - 10, { size: 13, weight: 700, color: css("--bad") });
