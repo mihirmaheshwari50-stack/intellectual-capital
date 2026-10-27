@@ -143,7 +143,7 @@
             return `<a class="card tilt reveal" href="#/topic/${t.id}" style="--c:${s.color}">
               <div class="card-top"><span class="num">${String(i + 1).padStart(2, "0")}</span>${ring(pct, s.color)}</div>
               <h3>${t.title}</h3><p>${t.blurb}</p>
-              <div class="tags"><span class="tag">${t.level}</span>${t.demo ? `<span class="tag">Interactive</span>` : ""}${tp.best != null ? `<span class="tag done">Best ${Math.round(tp.best * 100)}%</span>` : ""}</div>
+              <div class="tags"><span class="tag">${t.level}</span><span class="tag">${t.quiz.length} questions</span><span class="tag">${t.cards.length} cards</span>${tp.best != null ? `<span class="tag done">Best ${Math.round(tp.best * 100)}%</span>` : ""}</div>
               <span class="go" aria-hidden="true">→</span></a>`;
           }).join("")}
         </div>
@@ -171,7 +171,7 @@
     const t = topic(id); if (!t) return home();
     const s = SUBJECTS[t.subject], color = s.color;
     const idx = TOPICS.filter(x => x.subject === t.subject), pos = idx.indexOf(t), next = idx[pos + 1];
-    const toc = [...t.sections.map((x, i) => [`s${i}`, x.h]), ...(t.demo ? [["demo", "Interactive lab"]] : []), ["worked", "Worked examples"], ["formulas", "Key formulae"], ["practice", "Exam practice"], ["cards", "Flashcards"]];
+    const toc = [...(t.syllabus ? [["syllabus", "Syllabus checklist"]] : []), ...t.sections.map((x, i) => [`s${i}`, x.h]), ...(t.demo ? [["demo", "Interactive lab"]] : []), ["worked", "Worked examples"], ["formulas", "Key formulae"], ["practice", "Exam practice"], ["cards", "Flashcards"]];
     const v = el(`<div style="--c:${color}">
       <div class="lesson-hero">
         <div class="crumbs"><a href="#/">Topics</a> <span>/</span> <a href="#/" data-subj="${t.subject}">${s.name}</a></div>
@@ -184,6 +184,11 @@
       <div class="layout">
         <nav class="toc" aria-label="On this page">${toc.map(([h, l], i) => `<a href="#${h}" data-sec="${h}"><span>${String(i + 1).padStart(2, "0")}</span>${l.replace(/\$[^$]*\$/g, "")}</a>`).join("")}</nav>
         <article>
+          ${t.syllabus ? `<section id="syllabus" class="reveal"><span class="kicker">What you need to know</span><h2>Syllabus checklist</h2>
+            <p class="muted">Every point below is explained in this lesson. Tick each one only when you could explain it to someone else without notes.</p>
+            <div class="syl-head"><div class="progress"><div></div></div><b class="syl-count"></b></div>
+            <ul class="syl">${t.syllabus.map(([code, text, sec], i) => `<li><label><input type="checkbox" data-i="${i}"><span class="syl-code">${code}</span><span class="syl-text">${text}</span></label><a href="#s${sec}" data-jump="s${sec}">Part ${sec + 1} →</a></li>`).join("")}</ul>
+            <p class="syl-note">Paraphrased from the Cambridge IGCSE ${s.code} syllabus. "S" or "E" marks Supplement / Extended content. Check the official syllabus for your exam year.</p></section>` : ""}
           ${t.sections.map((x, i) => `<section id="s${i}" class="reveal"><span class="kicker">Part ${i + 1}</span><h2>${x.h}</h2>${x.body}</section>`).join("")}
           ${t.demo ? `<section id="demo" class="reveal"><span class="kicker">Play with it</span><h2>Interactive lab</h2><p class="muted">Drag the sliders. Everything updates live, and the numbers below the canvas show the working.</p><div class="demo" id="demo-root"></div></section>` : ""}
           <section id="worked" class="reveal"><span class="kicker">See it done</span><h2>Worked examples</h2>
@@ -209,6 +214,13 @@
     if (t.demo && DEMOS[t.demo]) cleanup.push(DEMOS[t.demo](v.querySelector("#demo-root"), getComputedStyle(document.documentElement).getPropertyValue(t.subject === "maths" ? "--maths" : t.subject === "physics" ? "--physics" : "--chem").trim()));
     v.querySelectorAll(".viz[data-viz]").forEach(h => VIZ[h.dataset.viz] && cleanup.push(VIZ[h.dataset.viz](h)));
     quiz(v.querySelector("#quiz"), t);
+    if (t.syllabus) {
+      const ticks = store.get("syl", {}), boxes = [...v.querySelectorAll(".syl input")];
+      const upd = () => { const n = boxes.filter(b => b.checked).length; v.querySelector(".syl-count").textContent = `${n} / ${boxes.length} mastered`; v.querySelector(".syl-head .progress div").style.width = (n / boxes.length * 100) + "%"; };
+      boxes.forEach(b => { b.checked = !!ticks[t.id + ":" + b.dataset.i]; b.onchange = () => { const k = store.get("syl", {}); k[t.id + ":" + b.dataset.i] = b.checked; store.set("syl", k); upd(); }; });
+      v.querySelectorAll("[data-jump]").forEach(a => a.onclick = (e) => { e.preventDefault(); document.getElementById(a.dataset.jump).scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); });
+      upd();
+    }
     flashcards(v.querySelector("#fc"), t.cards.map(c => ({ c, t })));
     math(v); reveal(v);
     // TOC + reading progress + mark as read
@@ -225,23 +237,28 @@
     cleanup.push(() => removeEventListener("scroll", onScroll));
   }
 
-  function quiz(root, t) {
-    let score = 0, answered = 0; const max = t.quiz.reduce((s, q) => s + q.marks, 0);
+  function quiz(root, t, filter = "all") {
+    const qs = t.quiz.filter(q => filter === "all" || q.type === filter);
+    let score = 0, answered = 0; const max = qs.reduce((s, q) => s + q.marks, 0);
+    const count = (ty) => t.quiz.filter(q => ty === "all" || q.type === ty).length;
+    const tabs = el(`<div class="filters quiz-filters" role="group" aria-label="Question type">${[["all", "All"], ["mcq", "Multiple choice"], ["struct", "Written"]].map(([k, l]) => `<button class="chip" aria-pressed="${k === filter}" data-qf="${k}">${l} <span class="n">${count(k)}</span></button>`).join("")}</div>`);
+    tabs.onclick = (e) => { const b = e.target.closest("[data-qf]"); if (!b || b.dataset.qf === filter) return; root.innerHTML = ""; quiz(root, t, b.dataset.qf); math(root); };
+    root.appendChild(tabs);
     const head = el(`<div class="scorebar"><div class="progress"><div style="width:0"></div></div><b class="score">0 / ${max}</b></div>`);
     root.appendChild(head);
     const update = () => {
       head.querySelector(".progress div").style.width = (score / max * 100) + "%";
       head.querySelector(".score").textContent = `${score} / ${max}`;
-      if (answered === t.quiz.length) {
-        const best = Math.max(progress()[t.id]?.best ?? 0, score / max); saveProgress(t.id, { best });
+      if (answered === qs.length) {
+        if (filter === "all") saveProgress(t.id, { best: Math.max(progress()[t.id]?.best ?? 0, score / max) });
         const pct = score / max, msg = pct >= .9 ? "A* territory. Try teaching it to someone to make it permanent." : pct >= .7 ? "Solid. Re-read the parts you dropped marks on, then retry." : "Go back through the lesson sections and worked examples, then have another go. That loop is how the grade moves.";
         const done = el(`<div class="result"><b>${Math.round(pct * 100)}%</b><span>${msg}</span><button class="btn small">Retry</button></div>`);
-        done.querySelector("button").onclick = () => { root.innerHTML = ""; quiz(root, t); math(root); };
+        done.querySelector("button").onclick = () => { root.innerHTML = ""; quiz(root, t, filter); math(root); };
         root.appendChild(done);
         if (pct >= .9) { const r = done.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top, getComputedStyle(root).getPropertyValue("--c")); }
       }
     };
-    t.quiz.forEach((q, qi) => {
+    qs.forEach((q, qi) => {
       const card = el(`<div class="qcard"><span class="marks">[${q.marks} mark${q.marks > 1 ? "s" : ""}]</span><p class="qtext"><b>Q${qi + 1}.</b> ${q.q}</p></div>`);
       if (q.type === "mcq") {
         const opts = el(`<div class="opts">${q.opts.map((o, i) => `<button class="opt"><span class="letter">${"ABCD"[i]}</span><span>${o}</span></button>`).join("")}</div>`);
