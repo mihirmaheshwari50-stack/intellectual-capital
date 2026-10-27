@@ -423,5 +423,83 @@
     });
   };
 
+  // ---------- Fractional distillation of petroleum ----------
+  V.fractionalDist = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W * .3, cw = 90, top = 30, bot = H - 40;
+    const F = [["refinery gas", "gas for heating, cooking", 1], ["gasoline / petrol", "fuel for cars", 4], ["naphtha", "chemical feedstock", 8], ["kerosene / paraffin", "jet fuel", 12], ["diesel / gas oil", "diesel engines", 16], ["fuel oil", "ships, home heating", 25], ["lubricating oil", "lubricants, waxes, polishes", 30], ["bitumen", "surfacing roads", 50]];
+    const g = ctx.createLinearGradient(0, top, 0, bot); g.addColorStop(0, "#5aa0e033"); g.addColorStop(1, "#e0503a55"); ctx.fillStyle = g; ctx.fillRect(cx - cw / 2, top, cw, bot - top);
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.strokeRect(cx - cw / 2, top, cw, bot - top);
+    const n = F.length, step = (bot - top) / n;
+    F.forEach(([nm, use, c], i) => { const y = top + (i + .5) * step, act = Math.floor(t / P * n * 1.0) % n === i;
+      if (i > 0 && i < n - 1) { ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx - cw / 2, top + i * step); ctx.lineTo(cx + cw / 2 - 20, top + i * step); ctx.stroke(); }
+      ctx.strokeStyle = act ? cs("--chem") : cs("--ink"); ctx.lineWidth = act ? 3 : 2; ctx.beginPath(); ctx.moveTo(cx + cw / 2, y); ctx.lineTo(cx + cw / 2 + 30, y); ctx.stroke();
+      text(ctx, nm, cx + cw / 2 + 38, y - 2, { size: 12, weight: act ? 700 : 600, color: act ? cs("--chem") : cs("--ink") }); text(ctx, `C${c}${i === n - 1 ? "+" : ""} · ${use}`, cx + cw / 2 + 38, y + 13, { size: 11, color: cs("--muted") });
+    });
+    // vapour rising and condensing at its level
+    for (let i = 0; i < 30; i++) { const lvl = i % n, ph = (t * .35 + rnd(i, 1)) % 1, yT = top + (lvl + .5) * step, y = bot - 10 - ph * (bot - 10 - yT), x = cx + (rnd(i, 2) - .5) * (cw - 20); dot(ctx, x, y, 3, `hsl(${200 - lvl * 22},70%,50%)`); }
+    text(ctx, "≈ 25 °C (top: cooler)", cx - cw / 2 - 8, top + 10, { size: 11, align: "right", color: cs("--maths") }); text(ctx, "≈ 350 °C (bottom: hotter)", cx - cw / 2 - 8, bot - 4, { size: 11, align: "right", color: cs("--bad") });
+    arrow(ctx, cx - cw / 2 - 70, bot - 20, cx - cw / 2 - 2, bot - 20, cs("--bad")); text(ctx, "heated crude oil vapour", cx - cw / 2 - 6, bot - 28, { size: 11, color: cs("--bad"), align: "right" });
+  }, { h: 380, period: 10, caption: "Fractional distillation: each fraction condenses where the column temperature falls below its boiling point" });
+
+  // ---------- Cracking a long alkane ----------
+  V.cracking = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = clamp((t / P - .25) / .35), y = H / 2 - 10, n = 10, gap = Math.min(46, (W - 80) / n);
+    const x0 = W / 2 - (n - 1) * gap / 2;
+    for (let i = 0; i < n; i++) { const right = i >= 8, dx = right ? k * 60 : -k * 10, x = x0 + i * gap + dx;
+      if (i < n - 1 && !(i === 7 && k > .05)) { ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x0 + (i + 1) * gap + ((i + 1) >= 8 ? k * 60 : -k * 10), y); ctx.stroke(); if (right && k > .5) { ctx.beginPath(); ctx.moveTo(x, y + 6); ctx.lineTo(x + gap, y + 6); ctx.stroke(); } }
+      dot(ctx, x, y, 12, right ? cs("--chem") : "#555"); text(ctx, "C", x, y + 4, { size: 11, align: "center", color: "#fff", weight: 700 }); }
+    if (k > .3 && k < .9) { ctx.globalAlpha = 1 - Math.abs(k - .6) * 3; text(ctx, "✶", x0 + 7.5 * gap + 20 * k, y - 20, { size: 22, align: "center", color: cs("--bad") }); ctx.globalAlpha = 1; }
+    text(ctx, "C₁₀H₂₂  →  C₈H₁₈  +  C₂H₄", W / 2, 40, { size: 16, align: "center", weight: 700 });
+    text(ctx, k > .9 ? "octane (alkane: petrol)" : "decane (long-chain alkane)", x0 + 3.5 * gap, y + 44, { size: 12, align: "center", color: cs("--muted") }); if (k > .9) text(ctx, "ethene (alkene: C=C)", x0 + 8.5 * gap + 60, y + 44, { size: 12, align: "center", color: cs("--chem"), weight: 700 });
+    text(ctx, "heat (≈ 600 °C) + catalyst (aluminium oxide / silica), or steam at high temperature", W / 2, H - 16, { size: 12, align: "center", color: cs("--muted") });
+  }, { h: 220, period: 6, caption: "Cracking breaks a long alkane into a shorter alkane and an alkene (H atoms not shown)" });
+
+  // ---------- Bromine water test ----------
+  V.bromineWater = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = clamp((t / P - .2) / .4), sh = (tt) => Math.sin(tt * 18) * 4 * (k > 0 && k < 1 ? 1 : 0);
+    [[W * .28, "hexane (alkane)", false], [W * .72, "hexene (alkene)", true]].forEach(([x, l, alk]) => {
+      const xx = x + sh(t), y0 = 40, h = H - 110;
+      ctx.fillStyle = alk ? `rgba(230,140,40,${.06 + .69 * (1 - k)})` : "rgba(230,140,40,.75)"; ctx.fillRect(xx - 20, y0 + h * .35, 40, h * .65 - 20); ctx.beginPath(); ctx.arc(xx, y0 + h - 20, 20, 0, Math.PI); ctx.fill();
+      ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(xx - 20, y0); ctx.lineTo(xx - 20, y0 + h - 20); ctx.arc(xx, y0 + h - 20, 20, Math.PI, 0, true); ctx.lineTo(xx + 20, y0); ctx.stroke();
+      text(ctx, l, x, H - 50, { size: 13, align: "center", weight: 700 }); text(ctx, alk ? (k > .9 ? "orange → colourless" : "shaking…") : "stays orange", x, H - 30, { size: 12, align: "center", color: alk ? cs("--chem") : cs("--muted"), weight: 600 });
+    });
+    text(ctx, "add bromine water and shake", W / 2, 22, { size: 13, align: "center", weight: 600 });
+    if (k > .9) text(ctx, "C₆H₁₂ + Br₂ → C₆H₁₂Br₂ (addition across C=C)", W / 2, H - 8, { size: 12, align: "center", color: cs("--muted") });
+  }, { h: 280, period: 6, caption: "The test for unsaturation: alkenes decolourise bromine water; alkanes do not" });
+
+  // ---------- Interactive: homologous series builder ----------
+  DEMOS.series = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 260);
+    const S = [["alkane", "CₙH₂ₙ₊₂", "-ane", [-162, -89, -42, -1, 36, 69]], ["alkene", "CₙH₂ₙ", "-ene", [null, -104, -48, -6, 30, 63]], ["alcohol", "CₙH₂ₙ₊₁OH", "-anol", [65, 78, 97, 117, 138, 157]], ["carboxylic acid", "CₙH₂ₙ₊₁COOH*", "-anoic acid", [101, 118, 141, 164, 186, 205]]];
+    const stem = ["meth", "eth", "prop", "but", "pent", "hex"]; let s = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = S.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; s = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); if (s === 1 && +v.n < 2) { const r = root.querySelector('input[type=range]'); if (r) { r.value = 2; r.dispatchEvent(new Event("input")); } } };
+    const v = DEMOS._lib.controls(root, [{ key: "n", label: "number of carbon atoms, n", min: 1, max: 6, step: 1, value: 2 }]);
+    root.appendChild(segEl); const out = readout(root); let last = "";
+    const sub = (k) => String(k).split("").map(d => "₀₁₂₃₄₅₆₇₈₉"[d]).join("");
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      let n = Math.round(+v.n); if (s === 1 && n < 2) n = 2;
+      const gap = Math.min(64, (w - 160) / Math.max(n, 2)), y = h / 2, x0 = w / 2 - (n - 1) * gap / 2 - (s >= 2 ? 30 : 0);
+      const bond = (x1, y1, x2, y2, dbl) => { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; if (!dbl) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); return; } const dx = y2 - y1, dy = x1 - x2, L = Math.hypot(dx, dy) || 1, ox = dx / L * 3.5, oy = dy / L * 3.5; ctx.beginPath(); ctx.moveTo(x1 + ox, y1 + oy); ctx.lineTo(x2 + ox, y2 + oy); ctx.moveTo(x1 - ox, y1 - oy); ctx.lineTo(x2 - ox, y2 - oy); ctx.stroke(); };
+      const atom = (x, yy, l, c) => { text(ctx, l, x, yy + 5, { size: 15, align: "center", weight: 700, color: c || css("--ink") }); };
+      const acid = s === 3, nc = n;
+      for (let i = 0; i < nc; i++) { const x = x0 + i * gap; if (i < nc - 1) bond(x + 11, y, x + gap - 11, y, s === 1 && i === 0); }
+      for (let i = 0; i < nc; i++) { const x = x0 + i * gap, first = i === 0, last = i === nc - 1;
+        const up = acid && last ? "=O" : "H", down = !(acid && last) && !(s === 1 && i === 1), left = first && s !== 1, right = last ? (s === 2 || acid ? "OH" : "H") : null;
+        if (up === "H") { bond(x, y - 11, x, y - 34); atom(x, y - 46, "H"); } else { bond(x, y - 11, x, y - 34, true); atom(x, y - 46, "O", css("--bad")); }
+        if (down) { bond(x, y + 11, x, y + 34); atom(x, y + 46, "H"); }
+        if (left) { bond(x - 11, y, x - 34, y); atom(x - 46, y, "H"); }
+        if (right === "H") { bond(x + 11, y, x + 34, y); atom(x + 46, y, "H"); }
+        if (right === "OH") { bond(x + 11, y, x + 34, y); atom(x + 46, y, "O", css("--bad")); bond(x + 57, y, x + 78, y); atom(x + 90, y, "H"); }
+        atom(x, y, "C", col); }
+            const st = stem[n - 1], name = s === 0 ? st + "ane" : s === 1 ? (n > 3 ? st + "-1-ene" : st + "ene") : s === 2 ? (n > 2 ? st + "an-1-ol" : st + "anol") : st + "anoic acid";
+            const mf = s === 0 ? `C${sub(n)}H${sub(2 * n + 2)}` : s === 1 ? `C${sub(n)}H${sub(2 * n)}` : s === 2 ? `C${sub(n)}H${sub(2 * n + 1)}OH` : (n === 1 ? "HCOOH" : `C${n - 1 > 1 ? sub(n - 1) : ""}H${sub(2 * n - 1)}COOH`);
+      const bp = S[s][3][n - 1];
+      const msg = `<b>${name}</b>: ${mf}. Homologous series: ${S[s][0]}s, general formula ${S[s][1]}${s === 3 ? " (n counts carbons in the R group)" : ""}. Boiling point ≈ ${bp} °C${bp < 20 ? " (gas at room temperature)" : bp < 100 && s === 0 ? " (liquid)" : ""}. ${s === 1 ? "The C=C double bond makes it unsaturated." : s === 0 ? "Single bonds only: saturated." : ""} Each extra carbon adds CH₂ and raises the boiling point.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._chem = { rnd, bounce };
 })();
