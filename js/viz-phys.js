@@ -564,4 +564,56 @@
       if (txt !== last) { out.innerHTML = txt; last = txt; }
     });
   };
+
+  // ---------- Rutherford alpha scattering ----------
+  V.alphaScatter = (host) => mount(host, (ctx, W, H, t, P) => {
+    const nx = W * .55, ny = H / 2, c = cs("--physics"), n = 15;
+    for (let k = 0; k < 9; k++) { ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(nx, ny, 26 + k * 0, 0, 7); }
+    // gold atoms as faint circles with tiny nucleus
+    for (let j = -2; j <= 2; j++) { ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(nx, ny + j * 60, 28, 0, 7); ctx.stroke(); dot(ctx, nx, ny + j * 60, j === 0 ? 5 : 3, cs("--bad"), 6); }
+    for (let i = 0; i < n; i++) {
+      const b = (i - (n - 1) / 2) * 9 + (i === 7 ? 0.6 : 0), y0 = ny + b, ph = ((t / P) * 1.6 + i * .13) % 1.6;
+      if (ph > 1) continue;
+      // simple Coulomb deflection by the central nucleus: angle ~ 2*atan(k/b)
+      const k = 70, defl = 2 * Math.atan(k / (Math.abs(b) * 22 + 1e-3)) * Math.sign(b || 1), x = 20 + ph * (W - 40);
+      let px = x, py = y0;
+      if (x > nx) { const d = x - nx; px = nx + d * Math.cos(defl); py = y0 + d * Math.sin(defl); }
+      ctx.globalAlpha = .25; ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(20, y0); ctx.lineTo(Math.min(x, nx), y0); if (x > nx) ctx.lineTo(px, py); ctx.stroke(); ctx.globalAlpha = 1;
+      dot(ctx, px, py, 4, c, 8);
+    }
+    text(ctx, "α particles", 20, 22, { size: 12, color: c, weight: 600 });
+    text(ctx, "most pass straight through; a few deflect; ~1 in 8000 bounces back", W - 14, H - 12, { size: 12, align: "right", weight: 600 });
+    text(ctx, "tiny, dense, positive nucleus", nx + 14, ny - 10, { size: 11, color: cs("--bad"), weight: 600 });
+  }, { h: 320, period: 7, caption: "Geiger and Marsden fired alpha particles at thin gold foil" });
+
+  // ---------- Penetration of α, β, γ ----------
+  V.penetration = (host) => mount(host, (ctx, W, H, t, P) => {
+    const rows = [["α", cs("--bad"), 0], ["β", cs("--maths"), 1], ["γ", cs("--chem"), 2]], walls = [W * .32, W * .55, W * .78];
+    [["paper", cs("--line")], ["3 mm aluminium", cs("--muted")], ["several cm lead", cs("--ink")]].forEach(([n, col], i) => { ctx.fillStyle = col; ctx.globalAlpha = .7; ctx.fillRect(walls[i] - (i === 2 ? 12 : 4), 34, i === 2 ? 24 : 8, H - 60); ctx.globalAlpha = 1; text(ctx, n, walls[i], H - 8, { size: 11, align: "center", weight: 600 }); });
+    rows.forEach(([n, col, stop], r) => { const y = 60 + r * (H - 100) / 2, f = (t / P) % 1, end = walls[stop] - 6;
+      text(ctx, n, 16, y + 5, { size: 16, weight: 700, color: col });
+      for (let k = 0; k < 4; k++) { const x = 40 + ((f + k / 4) % 1) * (W - 60); if (x < end) { if (n === "γ") { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); for (let q = 0; q < 24; q++) ctx.lineTo(x - 24 + q, y + 5 * Math.sin(q / 2)); ctx.stroke(); } else dot(ctx, x, y, n === "α" ? 6 : 3, col, 8); } }
+      ctx.strokeStyle = col; ctx.globalAlpha = .3; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(end, y); ctx.stroke(); ctx.globalAlpha = 1; });
+  }, { h: 280, period: 3, caption: "Alpha is stopped by paper, beta by a few mm of aluminium; gamma is only reduced by thick lead or concrete" });
+
+  // ---------- Interactive: half-life ----------
+  DEMOS.halflife = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const v = controls(root, [{ key: "T", label: "half-life (s)", min: 1, max: 8, step: .5, value: 3 }, { key: "bg", label: "background count (counts per tick)", min: 0, max: 20, step: 1, value: 0 }]);
+    const btn = document.createElement("button"); btn.className = "btn small"; btn.textContent = "Restart sample"; btn.style.marginTop = "10px"; root.appendChild(btn);
+    const out = readout(root); let N0 = 400, alive, hist, t0, tp, last = "";
+    const reset = () => { alive = Array(N0).fill(true); hist = [[0, N0]]; t0 = null; }; reset(); btn.onclick = reset;
+    return loop((tt) => {
+      size(); const w = W(), h = H(); if (t0 === null) { t0 = tt; tp = tt; } const t = tt - t0, dt = tt - tp; tp = tt; ctx.clearRect(0, 0, w, h);
+      const p = 1 - Math.pow(.5, dt / v.T); let n = 0; for (let i = 0; i < N0; i++) { if (alive[i] && Math.random() < p) alive[i] = false; if (alive[i]) n++; }
+      if (t - hist[hist.length - 1][0] > .1 && t < 40) hist.push([t, n]);
+      const cols = 20, cs2 = Math.min(10, (w * .38) / cols); for (let i = 0; i < N0; i++) { const x = 20 + (i % cols) * cs2, y = 20 + Math.floor(i / cols) * cs2; ctx.fillStyle = alive[i] ? col : css("--line"); ctx.fillRect(x, y, cs2 - 2, cs2 - 2); }
+      const gx = w * .45, gw = w - gx - 20, gy = 20, gh = h - 50, Tm = Math.max(20, v.T * 5); ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+      for (let k = 1; k <= 4; k++) { const x = gx + k * v.T / Tm * gw, y = gy + gh - gh / Math.pow(2, k); ctx.strokeStyle = css("--line"); ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(x, gy + gh); ctx.lineTo(x, y); ctx.lineTo(gx, y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css("--muted"); ctx.font = "11px Inter, sans-serif"; ctx.fillText(k + "T", x - 6, gy + gh + 14); }
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); hist.forEach(([a, b2], i) => { const X = gx + Math.min(a, Tm) / Tm * gw, Y = gy + gh - (b2 + v.bg) / (N0 + 20) * gh; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText("undecayed nuclei" + (v.bg ? " + background" : ""), gx + 6, gy + 12);
+      const txt = `${n} of ${N0} nuclei left after ${t.toFixed(1)} s. Each nucleus decays at random, but the number left halves every ${v.T} s: 400 → 200 → 100 → 50… ${v.bg ? `With a background of ${v.bg}, the curve levels off at ${v.bg} instead of zero: subtract the background before reading the half-life.` : ""}`;
+      if (Math.floor(t * 4) !== Math.floor((t - dt) * 4)) { out.innerHTML = txt; last = txt; }
+    });
+  };
 })();
