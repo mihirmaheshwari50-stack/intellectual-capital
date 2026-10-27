@@ -337,4 +337,59 @@
       if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
     });
   };
+
+  // ---------- Conduction: vibrations pass along a lattice; free electrons in metals ----------
+  V.conduction = (host) => mount(host, (ctx, W, H, t, P) => {
+    const c = cs("--physics"), b = cs("--maths"), rows = [[60, "non-metal (e.g. glass): vibrations passed slowly from particle to particle", false], [H / 2 + 50, "metal: free electrons carry energy quickly along the whole bar", true]];
+    rows.forEach(([y0, label, metal]) => {
+      const n = 14, dx = (W - 120) / (n - 1), x0 = 90; text(ctx, label, 20, y0 - 34, { size: 12, weight: 600, color: metal ? c : cs("--ink") });
+      // flame on left
+      ctx.fillStyle = cs("--bad"); ctx.beginPath(); ctx.moveTo(40, y0 + 20); ctx.quadraticCurveTo(26, y0, 40, y0 - 22); ctx.quadraticCurveTo(54, y0, 40, y0 + 20); ctx.fill();
+      for (let i = 0; i < n; i++) { const front = metal ? t * 6 : t * 1.6, heat = Math.max(0, Math.min(1, front - i * .9)) * (1 - i / (n * 1.6)), amp = 1 + 7 * heat, x = x0 + i * dx;
+        for (let j = -1; j <= 1; j++) { const yy = y0 + j * 18; const col = heat > .05 ? `rgba(217,83,31,${.35 + .65 * heat})` : b; dot(ctx, x + amp * Math.sin(t * 22 + i * 1.3 + j), yy + amp * Math.cos(t * 19 + i + j * 2), 6, col); } }
+      if (metal) for (let k = 0; k < 10; k++) { const ex = x0 + (((t * 160 + k * 97) % (W - 120)) + (W - 120)) % (W - 120), ey = y0 - 27 + ((k * 13) % 54); dot(ctx, ex, ey, 2.5, cs("--ink")); }
+    });
+  }, { h: 300, period: 8, caption: "Heated end vibrates more; in metals, fast free electrons spread the energy much faster" });
+
+  // ---------- Convection current in a beaker ----------
+  V.convection = (host) => mount(host, (ctx, W, H, t) => {
+    const b = cs("--maths"), c = cs("--physics"), x0 = W / 2 - 150, w = 300, y0 = 40, h = H - 100;
+    ctx.fillStyle = b + "22"; ctx.fillRect(x0, y0, w, h); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0, y0 - 14); ctx.lineTo(x0, y0 + h); ctx.lineTo(x0 + w, y0 + h); ctx.lineTo(x0 + w, y0 - 14); ctx.stroke();
+    // flame under right side
+    const fx = x0 + w * .72; ctx.fillStyle = cs("--bad"); ctx.beginPath(); ctx.moveTo(fx, y0 + h + 44); ctx.quadraticCurveTo(fx - 16, y0 + h + 22, fx, y0 + h + 6); ctx.quadraticCurveTo(fx + 16, y0 + h + 22, fx, y0 + h + 44); ctx.fill();
+    // loop path: up on the right, across the top to the left, down on the left, back along the bottom
+    const cx = x0 + w / 2, cy = y0 + h / 2, rx = w * .32, ry = h * .34;
+    for (let i = 0; i < 26; i++) { const a = (-t * .9 + i / 26 * Math.PI * 2) % (Math.PI * 2), x = cx + rx * Math.cos(a), y = cy + ry * Math.sin(a), hot = Math.cos(a) > 0 ? (1 - (Math.sin(a) + 1) / 2) * .4 + .6 * (Math.cos(a)) : 0;
+      dot(ctx, x, y, 6, hot > .3 ? c : b, hot > .3 ? 10 : 0); }
+    arrow(ctx, cx + rx + 26, cy + 30, cx + rx + 26, cy - 30, c, 3); arrow(ctx, cx - rx - 26, cy - 30, cx - rx - 26, cy + 30, b, 3);
+    text(ctx, "hot water rises", x0 + w + 10, cy - 10, { size: 12, color: c, weight: 600 }); text(ctx, "(expands, less dense)", x0 + w + 10, cy + 6, { size: 11, color: c });
+    text(ctx, "cooler, denser", x0 - 10, cy - 4, { size: 12, color: b, weight: 600, align: "right" }); text(ctx, "water sinks", x0 - 10, cy + 12, { size: 12, color: b, weight: 600, align: "right" });
+  }, { h: 340, period: 7, caption: "A convection current: heated fluid rises, cooler fluid sinks to replace it, and the loop carries energy round" });
+
+  // ---------- Interactive: energy balance (radiation) ----------
+  DEMOS.balance = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    let surf = 0; const surfs = [["matt black", 0.95, 0.95], ["white", 0.35, 0.9], ["shiny silver", 0.1, 0.1]];
+    const segEl = document.createElement("div"); segEl.className = "seg"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = surfs.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; surf = +bt.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); hist = []; T = 293; };
+    root.appendChild(segEl);
+    const v = controls(root, [{ key: "Pin", label: "radiation falling on it (W)", min: 0, max: 60, step: 2, value: 30 }, { key: "A", label: "surface area (×)", min: 0.5, max: 2, step: 0.1, value: 1 }]);
+    const out = readout(root); let last = "", T = 293, hist = [], tp = 0;
+    return loop((tt) => {
+      size(); const w = W(), h = H(), dt = Math.min(.05, tt - tp); tp = tt; ctx.clearRect(0, 0, w, h);
+      const [, a, e] = surfs[surf], Ts = 293, loss = (q) => e * v.A * 2.5e-9 * (q ** 4 - Ts ** 4) + 0.12 * v.A * (q - Ts), absorbed = a * v.Pin, emitted = loss(T);
+      T += (absorbed - emitted) * dt * 0.12; hist.push(T); if (hist.length > 400) hist.shift();
+      let lo = Ts, hi = 600; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (loss(m) > absorbed) hi = m; else lo = m; } const Teq = lo;
+      const gx = 50, gy = 20, gw = w * .62 - 60, gh = h - 50; axes(ctx, gx, gy, gw, gh, "time", "temperature / °C");
+      const Y = (q) => gy + gh - (q - 280) / 120 * gh; trace(ctx, hist.map((q, i) => [i, q]), (i) => gx + i / 400 * gw, Y, col);
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, Y(Teq)); ctx.lineTo(gx + gw, Y(Teq)); ctx.stroke(); ctx.setLineDash([]);
+      const bx = w * .7, by = h / 2; ctx.fillStyle = surf === 0 ? "#222" : surf === 1 ? "#eee" : "#bbb"; ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(bx, by - 30 * v.A, 60, 60 * v.A, 6); ctx.fill(); ctx.stroke();
+      arrow(ctx, bx - 70, by, bx - 6, by, css("--physics"), 2 + absorbed / 10); arrow(ctx, bx + 66, by, bx + 66 + 20 + Math.max(0, emitted) * 1.2, by, css("--bad"), 2 + Math.max(0, emitted) / 10);
+      ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText("absorbs " + absorbed.toFixed(1) + " W", bx - 80, by + 26); ctx.fillText("loses " + Math.max(0, emitted).toFixed(1) + " W", bx + 70, by + 26);
+      const state = Math.abs(absorbed - emitted) < .4 ? "gaining and losing energy at the same rate, so its temperature is <b>constant</b>" : absorbed > emitted ? "gaining energy faster than it loses it, so it is <b>warming up</b>" : "losing energy faster than it gains it, so it is <b>cooling down</b>";
+      const txt = `Now ${(T - 273).toFixed(0)} °C: ${state}. It settles at about ${(Teq - 273).toFixed(0)} °C (dashed line). A hotter object emits more radiation (and loses more by convection), so it always reaches a balance. Matt black absorbs most, so it settles hottest; shiny silver absorbs least.`;
+      if (txt !== last) { out.innerHTML = txt; last = txt; }
+    });
+  };
 })();
