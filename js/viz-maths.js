@@ -680,5 +680,53 @@
     });
   };
 
+  // ---------- Spinner animating relative frequency converging to probability ----------
+  V.relFreq = (host) => mount(host, (ctx, W, H, t, P) => {
+    const n = Math.min(200, Math.floor((t / P) * 220)), seed = 7;
+    let heads = 0; for (let i = 0; i < n; i++) heads += (rnd2(i, seed) < 0.5) ? 1 : 0;
+    const gx = 50, gw = W - 80, gy = 20, gh = H - 60, X = i => gx + i / 200 * gw, Y = p => gy + gh - p * gh;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.moveTo(gx, Y(.5)); ctx.lineTo(gx + gw, Y(.5)); ctx.stroke(); ctx.setLineDash([]);
+    text(ctx, "theoretical probability 0.5", gx + gw, Y(.5) - 8, { size: 11, align: "right", color: cs("--maths") });
+    ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2;
+    ctx.beginPath(); let h2 = 0; for (let i = 1; i <= n; i++) { h2 += (rnd2(i - 1, seed) < 0.5) ? 1 : 0; const p = h2 / i; i === 1 ? ctx.moveTo(X(i), Y(p)) : ctx.lineTo(X(i), Y(p)); } ctx.stroke();
+    text(ctx, `${n} tosses: relative frequency = ${(n ? heads / n : 0).toFixed(3)}`, gx, gy - 4, { size: 13, weight: 700 });
+    text(ctx, "number of tosses", gx + gw, gy + gh + 20, { size: 11, align: "right", color: cs("--muted") });
+  }, { h: 230, period: 9, caption: "As the number of trials increases, relative frequency settles towards the true probability" });
+
+  // ---------- Interactive: tree diagram builder (with/without replacement) ----------
+  DEMOS.treeDiagram = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 340);
+    let repl = true;
+    const v = DEMOS._lib.controls(root, [{ key: "r", label: "red balls", min: 0, max: 8, step: 1, value: 4 }, { key: "b", label: "blue balls", min: 0, max: 8, step: 1, value: 3 }]);
+    const bar = document.createElement("div"); bar.className = "seg wrap"; bar.style.marginTop = "10px"; bar.innerHTML = `<button aria-pressed="true" data-m="1">with replacement</button><button data-m="0">without replacement</button>`;
+    bar.onclick = e => { const b = e.target.closest("button"); if (!b) return; repl = b.dataset.m === "1"; bar.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(bar); const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const R = Math.round(v.r), B = Math.round(v.b), tot = R + B || 1;
+      const x0 = 40, x1 = w * .45, x2 = w * .85, y0 = h / 2;
+      const p1R = R / tot, p1B = B / tot;
+      const yR = y0 - h * .28, yB = y0 + h * .28;
+      const line = (xa, ya, xb, yb, lab, p) => { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke(); text(ctx, lab, (xa + xb) / 2, (ya + yb) / 2 - 8, { size: 12, weight: 700, align: "center", color: col }); };
+      dot(ctx, x0, y0, 4, css("--ink"));
+      line(x0, y0, x1, yR, p1R.toFixed(2), p1R); line(x0, y0, x1, yB, p1B.toFixed(2), p1B);
+      dot(ctx, x1, yR, 4); dot(ctx, x1, yB, 4);
+      text(ctx, "R", x1 - 14, yR + 4, { size: 12 }); text(ctx, "B", x1 - 14, yB + 4, { size: 12 });
+      const after = (firstRed) => { let r2 = R, b2 = B; if (!repl) { if (firstRed) r2--; else b2--; } const t2 = r2 + b2 || 1; return [r2 / t2, b2 / t2]; };
+      [[yR, true], [yB, false]].forEach(([y1, isRed]) => { const [pr, pb] = after(isRed); const yRR = y1 - h * .14, yBB = y1 + h * .14;
+        line(x1, y1, x2, yRR, pr.toFixed(2), pr); line(x1, y1, x2, yBB, pb.toFixed(2), pb);
+        text(ctx, "R", x2 + 14, yRR + 4, { size: 12 }); text(ctx, "B", x2 + 14, yBB + 4, { size: 12 });
+        text(ctx, (p1R && isRed ? p1R : p1B).toFixed(2) + " × " + pr.toFixed(2) + " = " + ((isRed ? p1R : p1B) * pr).toFixed(3), x2 + 40, yRR, { size: 11, color: css("--muted") });
+        text(ctx, (isRed ? p1R : p1B).toFixed(2) + " × " + pb.toFixed(2) + " = " + ((isRed ? p1R : p1B) * pb).toFixed(3), x2 + 40, yBB, { size: 11, color: css("--muted") });
+      });
+      const pRR = p1R * after(true)[0], pBB = p1B * after(false)[1];
+      const pSame = pRR + pBB, pDiff = 1 - pSame;
+      const msg = `${repl ? "<b>With</b> replacement: probabilities stay the same each time." : "<b>Without</b> replacement: probabilities change after the first pick (one fewer ball)."} P(both red) = ${pRR.toFixed(3)}, P(both blue) = ${pBB.toFixed(3)}. <b>P(same colour)</b> = ${pSame.toFixed(3)} (add the branches). <b>P(different colours)</b> = 1 − ${pSame.toFixed(3)} = ${pDiff.toFixed(3)}.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+  function rnd2(i, k) { return Math.abs(Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1; }
+
   V._maths = { factor, gcd, sup };
 })();
