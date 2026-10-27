@@ -178,5 +178,64 @@
     });
   };
 
+  // ---------- Matchstick pattern grows: 4, 7, 10, ... ----------
+  V.patternGrow = (host) => mount(host, (ctx, W, H, t, P) => {
+    const n = Math.min(5, 1 + Math.floor(t / (P / 5.5))), s = Math.min(46, (W - 200) / 15), y0 = 60;
+    let x = 30;
+    for (let k = 1; k <= n; k++) { const isNew = k === n;
+      for (let i = 0; i < k; i++) { const xx = x + i * s; ctx.strokeStyle = isNew && i === k - 1 && k > 1 ? cs("--bad") : cs("--maths"); ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); if (i === 0) { ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + s); } ctx.moveTo(xx, y0); ctx.lineTo(xx + s, y0); ctx.moveTo(xx + s, y0); ctx.lineTo(xx + s, y0 + s); ctx.moveTo(xx, y0 + s); ctx.lineTo(xx + s, y0 + s); ctx.stroke(); }
+      text(ctx, String(3 * k + 1), x + k * s / 2, y0 + s + 26, { size: 15, align: "center", weight: 700 }); text(ctx, "n = " + k, x + k * s / 2, y0 - 12, { size: 12, align: "center", color: cs("--muted") });
+      x += k * s + 30; if (x > W - 60) break; }
+    text(ctx, "4, 7, 10, 13, 16 …   each new square adds 3 sticks (red)", 30, H - 52, { size: 14, weight: 600 });
+    text(ctx, "nth term = 3n + 1   (3 × n, plus the 1 starting stick)", 30, H - 26, { size: 15, weight: 700, color: cs("--maths") });
+  }, { h: 230, period: 8, caption: "A linear sequence: the common difference becomes the coefficient of n" });
+
+  // ---------- Interactive: sequence explorer ----------
+  DEMOS.sequence = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 240);
+    const types = ["linear an + b", "quadratic an² + bn + c", "geometric a × rⁿ⁻¹", "cubic an³ + b"]; let ty = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = types.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const v = DEMOS._lib.controls(root, [{ key: "a", label: "a", min: -5, max: 5, step: 1, value: 3 }, { key: "b", label: "b", min: -10, max: 10, step: 1, value: 2 }, { key: "c", label: "c (quadratic) / r (geometric)", min: -3, max: 6, step: 1, value: 2 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const a = v.a, b = v.b, c = v.c, T = n => ty === 0 ? a * n + b : ty === 1 ? a * n * n + b * n + c : ty === 2 ? a * Math.pow(c, n - 1) : a * n ** 3 + b;
+      const terms = [1, 2, 3, 4, 5, 6].map(T), cw = (w - 40) / 6;
+      terms.forEach((x, i) => { ctx.fillStyle = col + "22"; ctx.fillRect(20 + i * cw + 4, 20, cw - 8, 44); text(ctx, String(+x.toFixed(3)), 20 + i * cw + cw / 2, 49, { size: 17, align: "center", weight: 700 }); text(ctx, "n = " + (i + 1), 20 + i * cw + cw / 2, 82, { size: 11, align: "center", color: css("--muted") }); });
+      const d1 = terms.slice(1).map((x, i) => x - terms[i]), d2 = d1.slice(1).map((x, i) => x - d1[i]), d3 = d2.slice(1).map((x, i) => x - d2[i]);
+      const row = (arr, y, lab, off) => { text(ctx, lab, 14, y, { size: 11, color: css("--muted") }); arr.forEach((x, i) => text(ctx, String(+x.toFixed(3)), 20 + (i + off) * cw + cw / 2, y, { size: 13, align: "center", color: css("--bad"), weight: 600 })); };
+      if (ty !== 2) { row(d1, 112, "1st diff", .5); if (ty !== 0) row(d2, 140, "2nd diff", 1); if (ty === 3) row(d3, 168, "3rd diff", 1.5); }
+      else { const ratios = terms.slice(1).map((x, i) => terms[i] ? x / terms[i] : NaN); row(ratios, 112, "ratio", .5); }
+      const sgn = (k, s) => k === 0 ? "" : (k < 0 ? " − " : " + ") + (Math.abs(k) === 1 && s ? "" : Math.abs(k)) + s;
+      const nth = ty === 0 ? `${a === 0 ? "" : a === 1 ? "n" : a === -1 ? "−n" : a + "n"}${sgn(b, "")}` : ty === 1 ? `${a}n²${sgn(b, "n")}${sgn(c, "")}` : ty === 2 ? `${a} × ${c}ⁿ⁻¹` : `${a}n³${sgn(b, "")}`;
+      const msg = ty === 0 ? `Linear: constant first difference <b>${a}</b>, so the nth term is <b>${nth}</b>. The difference is the coefficient of n; the zero term (n = 0) is ${b}.` : ty === 1 ? `Quadratic: constant <b>second</b> difference ${2 * a}, so the n² coefficient is ${2 * a} ÷ 2 = <b>${a}</b>. nth term <b>${nth}</b>. Subtract ${a}n² from each term to leave a linear sequence.` : ty === 2 ? `Geometric: constant <b>ratio</b> r = ${c}; nth term <b>${nth}</b>. ${Math.abs(c) > 1 ? "Grows exponentially." : ""}` : `Cubic: constant <b>third</b> difference ${6 * a} = 6a, so a = ${a}. nth term <b>${nth}</b>.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
+  // ---------- Interactive: direct and inverse variation ----------
+  DEMOS.variation = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    const T = [["y ∝ x", x => x, "y = kx"], ["y ∝ x²", x => x * x, "y = kx²"], ["y ∝ x³", x => x ** 3, "y = kx³"], ["y ∝ √x", x => Math.sqrt(x), "y = k√x"], ["y ∝ 1/x", x => 1 / x, "y = k/x"], ["y ∝ 1/x²", x => 1 / (x * x), "y = k/x²"]]; let ty = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = T.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const v = DEMOS._lib.controls(root, [{ key: "k", label: "constant k", min: 0.5, max: 8, step: 0.5, value: 2 }, { key: "x", label: "x", min: 0.5, max: 5, step: 0.5, value: 2 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const [nm, f, form] = T[ty], k = v.k, xv = v.x, ymax = Math.max(k * f(5), k * f(0.5), 1) * 1.05, gx = 40, gw = w - 60, gy = 14, gh = h - 40, X = x => gx + x / 5 * gw, Y = y => gy + gh - Math.min(y, ymax) / ymax * gh;
+      ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); for (let x = .2; x <= 5; x += .02) { const y = k * f(x); x < .21 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y)); } ctx.stroke();
+      const y1 = k * f(xv), y2 = k * f(xv * 2); dot(ctx, X(xv), Y(y1), 6, css("--bad")); if (xv * 2 <= 5) dot(ctx, X(xv * 2), Y(y2), 6, css("--physics"));
+      text(ctx, "x", gx + gw, gy + gh + 16, { size: 12, align: "right", color: css("--muted") }); text(ctx, "y", gx - 8, gy + 10, { size: 12, align: "right", color: css("--muted") });
+      const fac = y2 / y1, fs = Math.abs(fac - Math.round(fac)) < 1e-9 ? String(Math.round(fac)) : fac < 1 ? "1/" + (+(1 / fac).toFixed(3)) : (+fac.toFixed(3)).toString();
+      const msg = `<b>${nm}</b> means <b>${form}</b>. With k = ${k}: at x = ${xv}, y = <b>${+y1.toFixed(3)}</b>. Doubling x to ${xv * 2} multiplies y by <b>${fs}</b>${ty === 1 ? " (2²)" : ty === 2 ? " (2³)" : ty === 3 ? " (√2)" : ty === 4 ? " (halves)" : ty === 5 ? " (1/2²)" : ""}.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
