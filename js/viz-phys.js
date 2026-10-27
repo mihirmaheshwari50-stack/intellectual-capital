@@ -269,4 +269,72 @@
       if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
     });
   };
+
+  // ---------- Heating curve of ice → steam ----------
+  // piecewise temperature over time (s): ice warms, melts (flat), water warms, boils (flat), steam warms
+  const heatT = (t) => t < 1.5 ? -20 + 20 * t / 1.5 : t < 4 ? 0 : t < 7.5 ? 100 * (t - 4) / 3.5 : t < 11.5 ? 100 : 100 + 20 * (t - 11.5) / 1.5;
+  V.heatingCurve = (host) => mount(host, (ctx, W, H, t) => {
+    const c = cs("--physics"), b = cs("--maths"), g = cs("--chem"), gx = 50, gy = 24, gw = W * .62 - 60, gh = H - 64, T = 13;
+    axes(ctx, gx, gy, gw, gh, "time (energy supplied) →", "temperature / °C");
+    const X = (s) => gx + s / T * gw, Y = (q) => gy + gh - (q + 30) / 160 * gh;
+    [[0, "0"], [100, "100"]].forEach(([q, l]) => { ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(gx, Y(q)); ctx.lineTo(gx + gw, Y(q)); ctx.stroke(); ctx.setLineDash([]); text(ctx, l, gx - 6, Y(q) + 4, { size: 11, align: "right", color: cs("--muted") }); });
+    const pts = []; for (let s = 0; s <= Math.min(t, T); s += .04) pts.push([s, heatT(s)]); trace(ctx, pts, X, Y, c);
+    dot(ctx, X(Math.min(t, T)), Y(heatT(Math.min(t, T))), 6, c, 12);
+    const lab = [[.7, -20, "solid warms"], [2.75, 0, "melting: temp constant"], [5.6, 50, "liquid warms"], [9.5, 100, "boiling: temp constant"], [12.2, 110, "gas"]];
+    lab.forEach(([s, q, l]) => { if (t > s - .6) text(ctx, l, X(s), Y(q) - 10, { size: 11, color: cs("--ink"), align: "center", weight: 600 }); });
+    // particle panel
+    const px = W * .66, pw = W - px - 16, py = 30, ph = H - 80, state = t < 1.5 ? 0 : t < 4 ? (t - 1.5) / 2.5 : t < 7.5 ? 1 : t < 11.5 ? 1 + (t - 7.5) / 4 : 2;
+    ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 2; ctx.strokeRect(px, py, pw, ph);
+    const r = Math.min(8, pw / 18), n = 25, temp = heatT(t);
+    for (let i = 0; i < n; i++) { const gxp = px + 20 + (i % 5) * (2 * r + 2), gyp = py + ph - 20 - Math.floor(i / 5) * (2 * r + 2);
+      const lx = px + r + ((rnd(i, 1) * pw + t * 30 * (rnd(i, 2) - .5)) % (pw - 2 * r) + pw) % (pw - 2 * r), ly = py + ph - r - 2 - Math.floor(i / 7) * (2 * r) ;
+      const L = pw - 2 * r, M = ph - 2 * r, ax = (rnd(i, 5) * L + (80 + 60 * rnd(i, 3)) * t) % (2 * L), ay = (rnd(i, 6) * M + (70 + 50 * rnd(i, 4)) * t) % (2 * M), gxg = px + r + (ax > L ? 2 * L - ax : ax), gyg = py + r + (ay > M ? 2 * M - ay : ay);
+      const k1 = Math.min(1, state), k2 = Math.max(0, state - 1), jit = 1 + (temp + 30) / 40;
+      let x = gxp + (lx - gxp) * k1, y = gyp + (ly - gyp) * k1; x += (gxg - x) * k2; y += (gyg - y) * k2;
+      dot(ctx, x + jit * Math.sin(t * 20 + i), y + jit * Math.cos(t * 17 + i), r, state < .5 ? b : state < 1.5 ? g : c); }
+    text(ctx, state < .99 ? (state > 0 ? "melting" : "ice") : state < 1.01 ? "water" : state < 1.99 ? "boiling" : "steam", px + pw / 2, py + ph + 22, { size: 13, weight: 700, align: "center" });
+  }, { h: 320, period: 14, caption: "During melting and boiling, energy goes into breaking bonds between particles, so the temperature does not rise" });
+
+  // ---------- Evaporation: fastest particles escape, liquid cools ----------
+  V.evaporation = (host) => mount(host, (ctx, W, H, t, P) => {
+    const c = cs("--physics"), b = cs("--maths"), surf = H * .45, bx = 40, bw = W * .6;
+    ctx.fillStyle = b + "22"; ctx.fillRect(bx, surf, bw, H - surf - 20); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx, surf - 40); ctx.lineTo(bx, H - 20); ctx.lineTo(bx + bw, H - 20); ctx.lineTo(bx + bw, surf - 40); ctx.stroke();
+    ctx.strokeStyle = b; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx, surf); ctx.lineTo(bx + bw, surf); ctx.stroke();
+    const escaped = Math.floor(t / P * 8);
+    for (let i = 0; i < 30; i++) { const fast = i < 8, sp = fast ? 3 : 1; const L = bw - 16, M = H - surf - 36;
+      if (fast && i < escaped) { const age = (t - i * P / 8) , y = surf - 10 - age * 40, x = bx + 20 + rnd(i, 1) * (bw - 40) + age * 10; if (y > 10) dot(ctx, x, y, 6, c, 10); continue; }
+      const ax = (rnd(i, 2) * L + 40 * sp * t * (rnd(i, 3) + .5)) % (2 * L), ay = (rnd(i, 4) * M + 30 * sp * t * (rnd(i, 5) + .5)) % (2 * M);
+      dot(ctx, bx + 8 + (ax > L ? 2 * L - ax : ax), surf + 8 + (ay > M ? 2 * M - ay : ay), 6, fast ? c : b, fast ? 10 : 0); }
+    const temp = 30 - 6 * (escaped / 8);
+    const tx = bx + bw + 50, ty = 40, th = H - 80;
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.strokeRect(tx, ty, 14, th); ctx.fillStyle = cs("--bad"); const hh = (temp - 15) / 20 * th; ctx.fillRect(tx + 3, ty + th - hh, 8, hh);
+    text(ctx, temp.toFixed(1) + " °C", tx + 24, ty + th - hh + 4, { size: 13, weight: 700 });
+    text(ctx, "fast (high-energy) particles escape", 16, 20, { size: 12, color: c, weight: 600 });
+    text(ctx, "slower ones left behind → average KE falls → liquid cools", 16, 38, { size: 12, color: cs("--muted") });
+  }, { h: 300, period: 10, caption: "Evaporation removes the most energetic particles, so the average kinetic energy (temperature) of the liquid falls" });
+
+  // ---------- Interactive: specific heat capacity ----------
+  DEMOS.shc = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    const mats = [["water", 4200], ["aluminium", 900], ["copper", 390], ["oil", 2000]]; let mi = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = mats.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; mi = +bt.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); };
+    root.appendChild(segEl);
+    const v = controls(root, [
+      { key: "m", label: "mass (kg)", min: 0.2, max: 2, step: 0.1, value: 1 },
+      { key: "P", label: "heater power (W)", min: 20, max: 100, step: 5, value: 50 },
+      { key: "t", label: "heating time (min)", min: 1, max: 20, step: 1, value: 10 }
+    ]);
+    const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const [mn, c] = mats[mi], E = v.P * v.t * 60, dT = E / (v.m * c), gx = 50, gy = 20, gw = w - 90, gh = h - 60, Tmax = 80;
+      axes(ctx, gx, gy, gw, gh, "time / min", "temperature rise / °C");
+      const X = (m) => gx + m / 20 * gw, Y = (q) => gy + gh - Math.min(q, Tmax) / Tmax * gh, k = Math.min(1, (tt % 4) / 3);
+      mats.forEach(([n, cc], j) => { const pts = []; for (let m = 0; m <= v.t; m += .2) pts.push([m, v.P * m * 60 / (v.m * cc)]); alpha(ctx, j === mi ? 1 : .25, () => trace(ctx, pts, X, Y, j === mi ? col : css("--muted"), j === mi ? 3 : 2));
+        const lastp = pts[pts.length - 1]; alpha(ctx, j === mi ? 1 : .5, () => { ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText(n, Math.min(X(lastp[0]) + 6, w - 70), Math.max(Y(lastp[1]) + 4, gy + 10)); }); });
+      const txt = `Energy supplied $E=Pt=${v.P}\\times${v.t * 60}=${E}$ J. Temperature rise $\\Delta\\theta=\\dfrac{E}{mc}=\\dfrac{${E}}{${v.m}\\times${c}}=${fix(dT, 1)}$ °C for ${mn}. A high specific heat capacity means a small temperature rise for the same energy.`;
+      if (txt !== last) { out.innerHTML = txt; typeset(out); last = txt; }
+    });
+  };
 })();
