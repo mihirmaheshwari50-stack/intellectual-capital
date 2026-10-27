@@ -506,5 +506,52 @@
     });
   };
 
+  // ---------- Similar triangles scaling, area and volume scale factors ----------
+  V.similarScale = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = .5 + .9 * Math.sin(t / P * 2 * Math.PI) * .5 + .5, sf = .6 + k * 1.1;
+    const bx = W * .22, by = H * .7;
+    const tri = (x0, y0, s, c) => { ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + s * .9, y0); ctx.lineTo(x0 + s * .3, y0 - s * .8); ctx.closePath(); ctx.stroke(); };
+    tri(bx, by, 60, cs("--maths")); tri(bx + 20, by, 60 * sf, cs("--chem"));
+    text(ctx, "× " + sf.toFixed(2), bx + 110, by - 70, { size: 14, weight: 700, color: cs("--chem") });
+    const gx = W * .58, gy0 = 30, gw = W - gx - 30, gh = H - 70;
+    const X = v => gx + v / 2.2 * gw, barw = gw / 3.6;
+    [["length", sf, cs("--maths")], ["area", sf * sf, cs("--chem")], ["volume", sf ** 3, cs("--physics")]].forEach(([lab, val, c], i) => {
+      const bh = Math.min(gh, val / 2 * gh * .4), x = gx + i * barw * 1.1; ctx.fillStyle = c + "55"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.fillRect(x, gy0 + gh - bh, barw * .8, bh); ctx.strokeRect(x, gy0 + gh - bh, barw * .8, bh);
+      text(ctx, lab, x + barw * .4, gy0 + gh + 16, { size: 12, align: "center" }); text(ctx, "×" + val.toFixed(2), x + barw * .4, gy0 + gh - bh - 8, { size: 12, align: "center", weight: 700, color: c }); });
+    text(ctx, "scale factor k → lengths ×k, area ×k², volume ×k³", W / 2, 16, { size: 13, align: "center", weight: 700 });
+  }, { h: 260, period: 8, caption: "If lengths scale by k, area scales by k² and volume by k³" });
+
+  // ---------- Interactive: congruence test checker ----------
+  DEMOS.congruence = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 260);
+    const TESTS = ["SSS", "SAS", "ASA", "RHS"]; let ty = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = TESTS.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; ty = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl); const out = readout(root);
+    const DESC = ["All three sides of one triangle equal all three sides of the other.", "Two sides and the angle between them (included angle) match.", "Two angles and the side between them (included side) match.", "Right angle, hypotenuse and one other side match (right-angled triangles only)."];
+    let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const drawTri = (x0, y0, s, marks) => { const pts = [[x0, y0], [x0 + s, y0], [x0 + s * .35, y0 - s * .85]];
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke();
+        marks.forEach(([side, n, c]) => { const [a, b] = [pts[side], pts[(side + 1) % 3]], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = -(b[1] - a[1]), dy = b[0] - a[0], L = Math.hypot(dx, dy); ctx.strokeStyle = c || css("--bad"); ctx.lineWidth = 2;
+          for (let i = 0; i < n; i++) { const off = (i - (n - 1) / 2) * 6; ctx.beginPath(); ctx.moveTo(mx + dx / L * (off - 3) + (dx / L) * 0, my + dy / L * (off - 3)); } });
+        return pts; };
+      const tick = (p1, p2, n, c) => { const mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2, dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy), px = -dy / L, py = dx / L;
+        ctx.strokeStyle = c; ctx.lineWidth = 2; for (let i = 0; i < n; i++) { const off = (i - (n - 1) / 2) * 5; ctx.beginPath(); ctx.moveTo(mx + px * (off - 3) + dx / L * -4, my + py * (off - 3) + dy / L * -4); ctx.lineTo(mx + px * (off - 3) + dx / L * 4, my + py * (off - 3) + dy / L * 4); ctx.stroke(); } };
+      const arcMark = (v, p1, p2, n, c) => { const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]), a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]); ctx.strokeStyle = c; ctx.lineWidth = 2; for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.arc(v[0], v[1], 14 + i * 5, Math.min(a1, a2), Math.max(a1, a2)); ctx.stroke(); } };
+      const T1 = [[w * .18, h * .82], [w * .18 + 110, h * .82], [w * .18 + 38, h * .82 - 95]];
+      const T2 = [[w * .62, h * .82], [w * .62 + 110, h * .82], [w * .62 + 38, h * .82 - 95]];
+      [T1, T2].forEach(pts => { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); });
+      if (ty === 0) { [T1, T2].forEach(p => { tick(p[0], p[1], 1, css("--maths")); tick(p[1], p[2], 2, css("--chem")); tick(p[2], p[0], 3, css("--physics")); }); }
+      else if (ty === 1) { [T1, T2].forEach(p => { tick(p[0], p[1], 1, css("--maths")); tick(p[1], p[2], 2, css("--chem")); arcMark(p[1], p[0], p[2], 1, css("--bad")); }); }
+      else if (ty === 2) { [T1, T2].forEach(p => { arcMark(p[0], p[1], p[2], 1, css("--bad")); arcMark(p[1], p[0], p[2], 1, css("--maths")); tick(p[0], p[1], 2, css("--chem")); }); }
+      else { [T1, T2].forEach(p => { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.strokeRect(p[0][0] - 3, p[0][1] - 16, 13, 13); tick(p[0], p[2], 1, css("--maths")); tick(p[1], p[2], 2, css("--chem")); }); }
+      text(ctx, "△1", T1[0][0] + 40, h * .95, { size: 13, align: "center" }); text(ctx, "△2", T2[0][0] + 40, h * .95, { size: 13, align: "center" });
+      const msg = `<b>${TESTS[ty]}:</b> ${DESC[ty]} Matching marks (same colour/number of ticks) show which parts are equal.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
