@@ -98,8 +98,8 @@
     const y2 = y + bw + 70; for (let i = 0; i < 6; i++) { const cancel = i < 2 && k2 > .5; ctx.globalAlpha = cancel ? .25 : 1; ctx.fillStyle = cs("--chem") + "44"; ctx.strokeStyle = cs("--chem"); ctx.fillRect(x0 + i * bw, y2, bw - 4, bw - 4); ctx.strokeRect(x0 + i * bw, y2, bw - 4, bw - 4); text(ctx, "a", x0 + i * bw + bw / 2 - 2, y2 + bw / 2 + 3, { size: 14, align: "center", weight: 700 }); ctx.globalAlpha = 1; }
     for (let i = 0; i < 2; i++) { ctx.globalAlpha = k2 > .5 ? .25 : 1; ctx.strokeStyle = cs("--bad"); ctx.strokeRect(x0 + i * bw, y2 + bw + 8, bw - 4, bw - 4); text(ctx, "a", x0 + i * bw + bw / 2 - 2, y2 + bw + 8 + bw / 2 + 3, { size: 14, align: "center", weight: 700 }); ctx.globalAlpha = 1; if (k2 > .5) { ctx.strokeStyle = cs("--bad"); ctx.beginPath(); ctx.moveTo(x0 + i * bw, y2 + 2 * bw + 4); ctx.lineTo(x0 + i * bw + bw - 4, y2); ctx.stroke(); } }
     ctx.strokeStyle = cs("--ink"); ctx.beginPath(); ctx.moveTo(x0 - 6, y2 + bw + 2); ctx.lineTo(x0 + 6 * bw + 2, y2 + bw + 2); ctx.stroke();
-    text(ctx, k2 > .5 ? "a⁶ ÷ a² = a⁴   (divide → SUBTRACT: 6 − 2)" : "a⁶ ÷ a²", x0 + 6 * bw + 20, y2 + bw + 6, { size: 15, weight: 700 });
-  }, { h: 300, period: 7, caption: "Index laws come straight from counting the a's" });
+    text(ctx, "a⁶ ÷ a²" + (k2 > .5 ? " = a⁴" : ""), x0 + 6 * bw + 20, y2 + bw + 6, { size: 15, weight: 700 }); if (k2 > .5) text(ctx, "divide → SUBTRACT the powers: 6 − 2 = 4", W / 2, y2 + 2 * bw + 34, { size: 13, align: "center", color: cs("--muted") });
+  }, { h: 330, period: 7, caption: "Index laws come straight from counting the a's" });
 
   // ---------- Bounds on a number line ----------
   V.bounds = (host) => mount(host, (ctx, W, H, t, P) => {
