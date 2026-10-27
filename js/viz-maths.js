@@ -130,5 +130,53 @@
     });
   };
 
+  // ---------- Expanding brackets with an area model ----------
+  V.expandGrid = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k1 = seg(t, .4, 1.6), k2 = seg(t, 2, 3.2), k3 = seg(t, 3.6, 4.8), k4 = seg(t, 5.4, 6.6);
+    const u = Math.min(28, (W - 260) / 8), X0 = 70, Y0 = 50, xw = 4 * u, aw = 3 * u, xh = 4 * u, bh = 2 * u;
+    const cell = (x, y, w, h, c, lab, a) => alpha(ctx, a, () => { ctx.fillStyle = c + "33"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h); text(ctx, lab, x + w / 2, y + h / 2 + 6, { size: 17, align: "center", weight: 700 }); });
+    text(ctx, "x", X0 + xw / 2, Y0 - 12, { size: 16, align: "center", weight: 700, color: cs("--maths") }); text(ctx, "+3", X0 + xw + aw / 2, Y0 - 12, { size: 16, align: "center", weight: 700, color: cs("--maths") });
+    text(ctx, "x", X0 - 14, Y0 + xh / 2 + 6, { size: 16, align: "center", weight: 700, color: cs("--physics") }); text(ctx, "+2", X0 - 18, Y0 + xh + bh / 2 + 6, { size: 16, align: "center", weight: 700, color: cs("--physics") });
+    cell(X0, Y0, xw, xh, cs("--maths"), "x²", k1); cell(X0 + xw, Y0, aw, xh, cs("--chem"), "3x", k2); cell(X0, Y0 + xh, xw, bh, cs("--chem"), "2x", k3); cell(X0 + xw, Y0 + xh, aw, bh, cs("--physics"), "6", k4);
+    const tx = X0 + xw + aw + 40; text(ctx, "(x + 3)(x + 2)", tx, Y0 + 20, { size: 18, weight: 700 });
+    alpha(ctx, k4, () => { text(ctx, "= x² + 3x + 2x + 6", tx, Y0 + 56, { size: 17 }); text(ctx, "= x² + 5x + 6", tx, Y0 + 92, { size: 20, weight: 700, color: cs("--maths") }); text(ctx, "area of the whole rectangle", tx, Y0 + 120, { size: 12, color: cs("--muted") }); text(ctx, "= sum of the four parts", tx, Y0 + 138, { size: 12, color: cs("--muted") }); });
+  }, { h: 260, period: 9, caption: "Each term in the first bracket multiplies each term in the second: four rectangles, one area" });
+
+  // ---------- Solving an equation on a balance ----------
+  V.balance = (host) => mount(host, (ctx, W, H, t, P) => {
+    const steps = [["3x + 5 = 20", "start", 3, 5, 20], ["3x = 15", "subtract 5 from both sides", 3, 0, 15], ["x = 5", "divide both sides by 3", 1, 0, 5]];
+    const i = Math.min(2, Math.floor(t / (P / 3))), [eq, why, nx, c, r] = steps[i], cx = W / 2, by = 170, tilt = 0;
+    ctx.fillStyle = cs("--muted"); ctx.beginPath(); ctx.moveTo(cx - 20, by + 60); ctx.lineTo(cx + 20, by + 60); ctx.lineTo(cx, by); ctx.fill();
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx - W * .38, by); ctx.lineTo(cx + W * .38, by); ctx.stroke();
+    const L = cx - W * .2, R = cx + W * .2; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L - 80, by - 4); ctx.lineTo(L + 80, by - 4); ctx.moveTo(R - 80, by - 4); ctx.lineTo(R + 80, by - 4); ctx.stroke();
+    // left: nx bags labelled x, c unit cubes
+    for (let j = 0; j < nx; j++) { const x = L - 70 + j * 44; ctx.fillStyle = cs("--maths") + "44"; ctx.strokeStyle = cs("--maths"); ctx.beginPath(); ctx.roundRect(x, by - 46, 38, 40, 8); ctx.fill(); ctx.stroke(); text(ctx, "x", x + 19, by - 20, { size: 16, align: "center", weight: 700, color: cs("--maths") }); }
+    for (let j = 0; j < c; j++) { ctx.fillStyle = cs("--chem") + "66"; ctx.fillRect(L + 4 + (j % 3) * 18, by - 22 - Math.floor(j / 3) * 18, 15, 15); }
+    for (let j = 0; j < r; j++) { ctx.fillStyle = cs("--chem") + "66"; ctx.fillRect(R - 70 + (j % 8) * 18, by - 22 - Math.floor(j / 8) * 18, 15, 15); }
+    text(ctx, eq, cx, 34, { size: 22, align: "center", weight: 700 }); text(ctx, why, cx, 60, { size: 13, align: "center", color: cs("--bad"), weight: 600 });
+    text(ctx, "Whatever you do to one side, do to the other: the scales stay balanced", cx, H - 12, { size: 12, align: "center", color: cs("--muted") });
+  }, { h: 270, period: 9, caption: "Solving an equation keeps both sides balanced" });
+
+  // ---------- Interactive: simultaneous equations graphically ----------
+  DEMOS.simul = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 320);
+    const v = DEMOS._lib.controls(root, [{ key: "m1", label: "line 1 gradient", min: -4, max: 4, step: .5, value: 2 }, { key: "c1", label: "line 1 intercept", min: -6, max: 6, step: 1, value: -1 }, { key: "m2", label: "line 2 gradient", min: -4, max: 4, step: .5, value: -1 }, { key: "c2", label: "line 2 intercept", min: -6, max: 6, step: 1, value: 5 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const s = Math.min(w, h) / 18, ox = w / 2, oy = h / 2, X = x => ox + x * s, Y = y => oy - y * s;
+      ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; for (let i = -12; i <= 12; i++) { ctx.beginPath(); ctx.moveTo(X(i), 0); ctx.lineTo(X(i), h); ctx.moveTo(0, Y(i)); ctx.lineTo(w, Y(i)); ctx.stroke(); }
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.moveTo(ox, 0); ctx.lineTo(ox, h); ctx.stroke();
+      const line = (m, c, colr) => { ctx.strokeStyle = colr; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(-20), Y(m * -20 + c)); ctx.lineTo(X(20), Y(m * 20 + c)); ctx.stroke(); };
+      line(v.m1, v.c1, css("--maths")); line(v.m2, v.c2, css("--physics"));
+      const f = n => (Math.round(n * 100) / 100).toString(), eq1 = `y = ${f(v.m1)}x ${v.c1 < 0 ? "− " + f(-v.c1) : "+ " + f(v.c1)}`, eq2 = `y = ${f(v.m2)}x ${v.c2 < 0 ? "− " + f(-v.c2) : "+ " + f(v.c2)}`;
+      let msg;
+      if (v.m1 === v.m2) msg = `${eq1} and ${eq2} have the same gradient: the lines are <b>parallel</b>${v.c1 === v.c2 ? " (in fact identical: infinitely many solutions)" : ", so there is <b>no solution</b>"}.`;
+      else { const x = (v.c2 - v.c1) / (v.m1 - v.m2), y = v.m1 * x + v.c1; dot(ctx, X(x), Y(y), 7, css("--bad")); text(ctx, `(${f(x)}, ${f(y)})`, X(x) + 10, Y(y) - 10, { size: 13, weight: 700, color: css("--bad") });
+        msg = `<span style="color:var(--maths)">${eq1}</span> and <span style="color:var(--physics)">${eq2}</span> cross at <b>(${f(x)}, ${f(y)})</b>, so the solution is x = ${f(x)}, y = ${f(y)}. Algebraically: ${f(v.m1)}x ${v.c1 < 0 ? "−" : "+"} ${f(Math.abs(v.c1))} = ${f(v.m2)}x ${v.c2 < 0 ? "−" : "+"} ${f(Math.abs(v.c2))}, so ${f(v.m1 - v.m2)}x = ${f(v.c2 - v.c1)}.`; }
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
