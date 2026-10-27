@@ -416,6 +416,26 @@ ${F.plot({ w: 420, h: 280, x: [-3, 6], y: [-1, 8], ticks: { x: [1, 2, 3, 4, 5], 
       ms: M`(a) <b>M1</b> draw $y=2$ <b>A1</b> $x\approx-1.4$ and $x\approx3.4$ (exact $1\pm\sqrt6$).<br>(b) <b>M1</b> $x^2-2x-3=x-2$, so <b>B1</b> draw $y=x-2$<br><b>A1</b> $x\approx-0.3$ and $x\approx3.3$.` },
     { type: "struct", marks: 3, q: M`Find the range of values of $k$ for which $x^2+4x+k=0$ has two distinct real roots. <i>(Extension)</i>`,
       ms: M`<b>M1</b> $b^2-4ac>0$: $16-4k>0$<br><b>M1</b> $4k<16$<br><b>A1</b> $k<4$` }
+  ],
+  exam: [
+    { d: 1, type: "struct", marks: 2, q: M`Factorise $x^2+7x+12$.`, ms: M`<b>M1</b> two numbers with product 12, sum 7: 3 and 4<br><b>A1</b> $(x+3)(x+4)$` },
+    { d: 1, type: "struct", marks: 2, q: M`Solve $x^2-5x=0$.`, ms: M`<b>M1</b> $x(x-5)=0$<br><b>A1</b> $x=0$ or $x=5$` },
+    { d: 1, type: "mcq", marks: 1, q: M`Expand $(x-3)(x+5)$.`, opts: ["$x^2+2x-15$", "$x^2-2x-15$", "$x^2+8x-15$", "$x^2+2x+15$"], ans: 0, why: M`$x^2+5x-3x-15$.` },
+    { d: 1, type: "struct", marks: 2, q: M`Solve $x^2=49$.`, ms: M`<b>B1</b> $x=7$<br><b>B1</b> $x=-7$` },
+    { d: 1, type: "struct", marks: 2, q: M`Factorise $x^2-81$.`, ms: M`<b>B2</b> $(x-9)(x+9)$ (difference of two squares)` },
+    { d: 1, type: "mcq", marks: 1, q: M`The roots of $(x-2)(x+6)=0$ are`, opts: ["2 and 6", "−2 and 6", "2 and −6", "−2 and −6"], ans: 2, why: M`Set each bracket to zero.` },
+    { d: 2, type: "struct", marks: 3, q: M`Solve $2x^2+5x-3=0$.`, ms: M`<b>M1</b> $(2x-1)(x+3)=0$<br><b>A1</b> $x=\tfrac12$<br><b>A1</b> $x=-3$` },
+    { d: 2, type: "struct", marks: 3, q: M`Solve $x^2-4x-7=0$, giving your answers correct to 2 decimal places.`, ms: M`<b>M1</b> $x=\dfrac{4\pm\sqrt{16+28}}{2}$<br><b>A1</b> 5.32<br><b>A1</b> −1.32` },
+    { d: 2, type: "struct", marks: 3, q: M`Write $x^2+6x+2$ in the form $(x+a)^2+b$ and hence state the minimum value.`, ms: M`<b>B1</b> $a=3$<br><b>B1</b> $b=-7$<br><b>B1</b> minimum −7 (at $x=-3$)` },
+    { d: 2, type: "struct", marks: 2, q: M`Factorise completely $3x^2-12$.`, ms: M`<b>M1</b> $3(x^2-4)$<br><b>A1</b> $3(x-2)(x+2)$` },
+    { d: 2, type: "mcq", marks: 1, q: M`The turning point of $y=(x-4)^2+1$ is`, opts: ["(4, 1)", "(−4, 1)", "(4, −1)", "(1, 4)"], ans: 0, why: M`Completed-square form gives $(4,1)$.` },
+    { d: 2, type: "struct", marks: 3, q: M`A rectangle has length $(x+3)$ cm and width $x$ cm. Its area is 40 cm². Form and solve an equation to find $x$.`, ms: M`<b>M1</b> $x(x+3)=40 \Rightarrow x^2+3x-40=0$<br><b>M1</b> $(x+8)(x-5)=0$<br><b>A1</b> $x=5$ (reject −8)` },
+    { d: 2, type: "struct", marks: 2, q: M`Simplify $\dfrac{x^2-9}{x^2+5x+6}$.`, ms: M`<b>M1</b> $\dfrac{(x-3)(x+3)}{(x+2)(x+3)}$<br><b>A1</b> $\dfrac{x-3}{x+2}$` },
+    { d: 3, type: "struct", marks: 4, q: M`Solve the simultaneous equations $y=x^2-3x+1$ and $y=2x-3$.`, ms: M`<b>M1</b> $x^2-3x+1=2x-3$<br><b>M1</b> $x^2-5x+4=0\Rightarrow(x-1)(x-4)=0$<br><b>A1</b> $x=1,\ y=-1$<br><b>A1</b> $x=4,\ y=5$` },
+    { d: 3, type: "struct", marks: 4, q: M`Solve $\dfrac{3}{x-1}+\dfrac{2}{x+2}=1$.`, ms: M`<b>M1</b> $3(x+2)+2(x-1)=(x-1)(x+2)$<br><b>M1</b> $5x+4=x^2+x-2 \Rightarrow x^2-4x-6=0$<br><b>A1</b> $x=2\pm\sqrt{10}$<br><b>A1</b> 5.16 and −1.16` },
+    { d: 3, type: "struct", marks: 3, q: M`The equation $x^2+kx+9=0$ has exactly one solution. Find the possible values of $k$.`, ms: M`<b>M1</b> it must be a perfect square: $(x\pm3)^2$<br><b>A1</b> $k=6$<br><b>A1</b> $k=-6$` },
+    { d: 3, type: "struct", marks: 4, q: M`A ball is thrown so its height is $h=20t-5t^2$ metres after $t$ seconds. (a) When does it land? (b) Find its maximum height by completing the square.`, ms: M`<b>(a) M1</b> $5t(4-t)=0$<br><b>A1</b> $t=4$ s<br><b>(b) M1</b> $h=-5(t-2)^2+20$<br><b>A1</b> 20 m` },
+    { d: 3, type: "struct", marks: 3, q: M`Solve the inequality $x^2-x-12\lt 0$.`, ms: M`<b>M1</b> $(x-4)(x+3)\lt 0$<br><b>M1</b> roots −3 and 4; graph below axis between roots<br><b>A1</b> $-3\lt x\lt 4$` }
   ]
 });
 }

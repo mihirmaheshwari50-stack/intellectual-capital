@@ -406,6 +406,23 @@ ${(() => { const A = [70, 240], B = [290, 240], C = [370, 180], D = [150, 180], 
       ms: M`<b>M1</b> half the base diagonal $=\tfrac12\sqrt{8^2+8^2}=5.657$<br><b>M1</b> recognise the triangle: height 10, horizontal 5.657<br><b>M1</b> $\tan\theta=\dfrac{10}{5.657}$ <b>A1</b> $60.5^\circ$` },
     { type: "struct", marks: 5, q: M`From a point P, the angle of elevation of the top of a tower is 30°. From a point 20 m closer, it is 45°. Find the height of the tower.`,
       ms: M`<b>M1</b> $h=d\tan30^\circ$ <b>M1</b> $h=(d-20)\tan45^\circ$<br><b>M1</b> eliminate: $\dfrac{d}{\sqrt3}=d-20$ <b>A1</b> $d=47.3$ <b>A1</b> $h=27.3$ m` }
+  ],
+  exam: [
+    { d: 1, type: "struct", marks: 2, q: M`In a right-angled triangle, the hypotenuse is 13 cm and one side is 5 cm. Find the third side.`, ms: M`<b>M1</b> $\sqrt{13^2-5^2}$<br><b>A1</b> 12 cm` },
+    { d: 1, type: "struct", marks: 2, q: M`In a right-angled triangle, the side opposite angle $x$ is 7 cm and the hypotenuse is 10 cm. Find $x$.`, ms: M`<b>M1</b> $\sin x=\tfrac{7}{10}$<br><b>A1</b> 44.4°` },
+    { d: 1, type: "mcq", marks: 1, q: M`Which ratio is $\tan\theta$?`, opts: ["opposite ÷ hypotenuse", "adjacent ÷ hypotenuse", "opposite ÷ adjacent", "adjacent ÷ opposite"], ans: 2, why: M`TOA.` },
+    { d: 1, type: "struct", marks: 2, q: M`A ladder 6 m long leans against a wall at 70° to the ground. How high up the wall does it reach?`, ms: M`<b>M1</b> $6\sin70°$<br><b>A1</b> 5.64 m` },
+    { d: 1, type: "struct", marks: 2, q: M`Find the bearing of A from B if the bearing of B from A is 065°.`, ms: M`<b>M1</b> $65+180$<br><b>A1</b> 245°` },
+    { d: 2, type: "struct", marks: 3, q: M`In triangle ABC, $a=8$ cm, $b=11$ cm and angle $C=40°$. Calculate $c$.`, ms: M`<b>M1</b> $c^2=8^2+11^2-2(8)(11)\cos40°$<br><b>A1</b> $c^2=50.2$<br><b>A1</b> 7.08 cm` },
+    { d: 2, type: "struct", marks: 3, q: M`In triangle PQR, $PQ=9$ cm, angle $R=50°$ and angle $Q=70°$. Find $PR$.`, ms: M`<b>M1</b> $\dfrac{PR}{\sin70°}=\dfrac{9}{\sin50°}$<br><b>M1</b> $PR=\dfrac{9\sin70°}{\sin50°}$<br><b>A1</b> 11.0 cm` },
+    { d: 2, type: "struct", marks: 2, q: M`Find the area of a triangle with sides 7 cm and 9 cm and included angle 120°.`, ms: M`<b>M1</b> $\tfrac12(7)(9)\sin120°$<br><b>A1</b> 27.3 cm²` },
+    { d: 2, type: "mcq", marks: 1, q: M`Solve $\sin x=0.5$ for $0°\le x\le 360°$.`, opts: ["30° only", "30° and 150°", "30° and 330°", "60° and 120°"], ans: 1, why: M`$\sin x=\sin(180°-x)$.` },
+    { d: 2, type: "struct", marks: 3, q: M`From the top of a cliff 80 m high, the angle of depression of a boat is 25°. How far is the boat from the foot of the cliff?`, ms: M`<b>M1</b> angle of elevation from boat = 25°<br><b>M1</b> $\tan25°=\tfrac{80}{d}$<br><b>A1</b> 172 m` },
+    { d: 2, type: "struct", marks: 3, q: M`A triangle has sides 5 cm, 7 cm and 9 cm. Find the largest angle.`, ms: M`<b>M1</b> opposite 9 cm: $\cos\theta=\dfrac{5^2+7^2-9^2}{2(5)(7)}$<br><b>A1</b> $\cos\theta=-0.1$<br><b>A1</b> 95.7°` },
+    { d: 3, type: "struct", marks: 5, q: M`A ship sails 12 km on a bearing of 060° from port P to Q, then 8 km on a bearing of 150° to R. (a) Explain why angle PQR = 90°. (b) Find PR. (c) Find the bearing of R from P.`, ms: M`<b>(a) B1</b> back-bearing of P from Q is 240°; 240 − 150 = 90°<br><b>(b) M1</b> $\sqrt{12^2+8^2}$<br><b>A1</b> 14.4 km<br><b>(c) M1</b> angle QPR $=\tan^{-1}(8/12)=33.7°$<br><b>A1</b> 060 + 33.7 = 093.7°` },
+    { d: 3, type: "struct", marks: 4, q: M`A cuboid is 8 cm × 6 cm × 5 cm. Find (a) the length of the space diagonal, (b) the angle between the diagonal and the base.`, ms: M`<b>(a) M1</b> base diagonal $=\sqrt{64+36}=10$<br><b>A1</b> $\sqrt{100+25}=11.2$ cm<br><b>(b) M1</b> $\tan\theta=\tfrac{5}{10}$<br><b>A1</b> 26.6°` },
+    { d: 3, type: "struct", marks: 4, q: M`In triangle ABC, $AB=10$ cm, $BC=7$ cm and angle $A=35°$. Find the two possible values of angle $C$.`, ms: M`<b>M1</b> $\dfrac{\sin C}{10}=\dfrac{\sin35°}{7}$<br><b>A1</b> $\sin C=0.819$<br><b>A1</b> $C=55.0°$<br><b>A1</b> or $C=125.0°$ (ambiguous case)` },
+    { d: 3, type: "struct", marks: 3, q: M`Sketch $y=\cos x$ for $0°\le x\le360°$ and use it to solve $\cos x=-0.4$.`, ms: M`<b>B1</b> correct sketch: 1 at 0°, −1 at 180°, 1 at 360°<br><b>B1</b> $x=113.6°$<br><b>B1</b> $x=246.4°$` }
   ]
 });
 }

@@ -287,6 +287,24 @@ $$\%\text{ of element}=\frac{A_r\times\text{number of atoms of that element}}{M_
       ms: C`<b>M1</b> $M_r=80$; $\dfrac{28}{80}\times100$ <b>A1</b> $35\%$` },
     { type: "struct", marks: 3, q: C`Write ionic equations for (a) the precipitation of silver chloride when silver nitrate solution is added to sodium chloride solution, (b) zinc displacing copper from copper(II) sulfate solution.`,
       ms: C`(a) <b>B1</b> $\text{Ag}^+(\text{aq})+\text{Cl}^-(\text{aq})\rightarrow\text{AgCl}(\text{s})$<br>(b) <b>B1</b> $\text{Zn}(\text{s})+\text{Cu}^{2+}(\text{aq})\rightarrow\text{Zn}^{2+}(\text{aq})+\text{Cu}(\text{s})$ <b>B1</b> state symbols correct` }
+  ],
+  exam: [
+    { d: 1, type: "struct", marks: 2, q: C`Calculate the relative formula mass of calcium carbonate, CaCO₃. (Ar: Ca 40, C 12, O 16)`, ms: C`<b>M1</b> 40 + 12 + 3 × 16<br><b>A1</b> 100` },
+    { d: 1, type: "struct", marks: 2, q: C`How many moles are in 22 g of carbon dioxide? (Mr 44)`, ms: C`<b>M1</b> 22 ÷ 44<br><b>A1</b> 0.50 mol` },
+    { d: 1, type: "mcq", marks: 1, q: C`The mass of 2.0 mol of water (Mr 18) is`, opts: ["9 g", "18 g", "36 g", "20 g"], ans: 2, why: C`2.0 × 18.` },
+    { d: 1, type: "struct", marks: 1, q: C`State the volume of one mole of any gas at room temperature and pressure.`, ms: C`<b>B1</b> 24 dm³ (24 000 cm³)` },
+    { d: 1, type: "mcq", marks: 1, q: C`Which equation is balanced?`, opts: ["H₂ + O₂ → H₂O", "2H₂ + O₂ → 2H₂O", "H₂ + 2O₂ → 2H₂O", "2H₂ + 2O₂ → 2H₂O"], ans: 1, why: C`4 H and 2 O on each side.` },
+    { d: 1, type: "struct", marks: 2, q: C`Calculate the concentration in mol/dm³ of 0.25 mol of NaOH dissolved in 500 cm³ of solution.`, ms: C`<b>M1</b> 0.25 ÷ 0.500<br><b>A1</b> 0.50 mol/dm³` },
+    { d: 2, type: "struct", marks: 3, q: C`Calculate the mass of magnesium oxide formed when 6.0 g of magnesium burns completely. 2Mg + O₂ → 2MgO (Ar: Mg 24, O 16)`, ms: C`<b>C1</b> moles Mg = 6.0 ÷ 24 = 0.25<br><b>C1</b> moles MgO = 0.25<br><b>A1</b> 0.25 × 40 = 10 g` },
+    { d: 2, type: "struct", marks: 3, q: C`Calculate the volume of hydrogen at r.t.p. produced when 1.3 g of zinc reacts with excess hydrochloric acid. Zn + 2HCl → ZnCl₂ + H₂ (Ar: Zn 65)`, ms: C`<b>C1</b> moles Zn = 0.020<br><b>C1</b> moles H₂ = 0.020<br><b>A1</b> 0.48 dm³ (480 cm³)` },
+    { d: 2, type: "struct", marks: 3, q: C`A compound contains 40.0% carbon, 6.7% hydrogen and 53.3% oxygen by mass. Find its empirical formula.`, ms: C`<b>M1</b> 40.0/12, 6.7/1, 53.3/16 = 3.33 : 6.7 : 3.33<br><b>M1</b> divide by 3.33: 1 : 2 : 1<br><b>A1</b> CH₂O` },
+    { d: 2, type: "struct", marks: 2, q: C`S: The empirical formula of a compound is CH₂ and its Mr is 56. Find its molecular formula.`, ms: C`<b>M1</b> 56 ÷ 14 = 4<br><b>A1</b> C₄H₈` },
+    { d: 2, type: "struct", marks: 3, q: C`S: Calculate the percentage by mass of nitrogen in ammonium sulfate, (NH₄)₂SO₄. (Ar: N 14, H 1, S 32, O 16)`, ms: C`<b>C1</b> Mr = 132<br><b>C1</b> mass N = 28<br><b>A1</b> 21.2%` },
+    { d: 2, type: "mcq", marks: 1, q: C`What volume does 0.10 mol of oxygen occupy at r.t.p.?`, opts: ["0.24 dm³", "2.4 dm³", "24 dm³", "240 dm³"], ans: 1, why: C`0.10 × 24.` },
+    { d: 3, type: "struct", marks: 4, q: C`S: 25.0 cm³ of sodium hydroxide is neutralised by 20.0 cm³ of 0.150 mol/dm³ sulfuric acid. 2NaOH + H₂SO₄ → Na₂SO₄ + 2H₂O. Calculate the concentration of the sodium hydroxide.`, ms: C`<b>C1</b> moles H₂SO₄ = 0.0200 × 0.150 = 0.00300<br><b>C1</b> moles NaOH = 0.00600<br><b>C1</b> 0.00600 ÷ 0.0250<br><b>A1</b> 0.240 mol/dm³` },
+    { d: 3, type: "struct", marks: 4, q: C`S: 5.0 g of calcium carbonate is heated and 2.0 g of calcium oxide is obtained. CaCO₃ → CaO + CO₂. Calculate the percentage yield. (Mr: CaCO₃ 100, CaO 56)`, ms: C`<b>C1</b> moles CaCO₃ = 0.050<br><b>C1</b> theoretical CaO = 0.050 × 56 = 2.8 g<br><b>M1</b> 2.0 ÷ 2.8 × 100<br><b>A1</b> 71%` },
+    { d: 3, type: "struct", marks: 5, q: C`S: 2.4 g of magnesium is added to 50 cm³ of 1.0 mol/dm³ hydrochloric acid. Mg + 2HCl → MgCl₂ + H₂. (a) Show which reactant is in excess. (b) Calculate the volume of hydrogen at r.t.p.`, ms: C`<b>C1</b> moles Mg = 0.10<br><b>C1</b> moles HCl = 0.050; needs 0.20 for all Mg<br><b>B1</b> magnesium is in excess (HCl limiting)<br><b>C1</b> moles H₂ = 0.025<br><b>A1</b> 0.60 dm³` },
+    { d: 3, type: "struct", marks: 4, q: C`S: When 2.50 g of hydrated copper(II) sulfate, CuSO₄·xH₂O, is heated to constant mass, 1.60 g of anhydrous CuSO₄ remains. Find x. (Mr: CuSO₄ 160, H₂O 18)`, ms: C`<b>C1</b> mass of water = 0.90 g<br><b>C1</b> moles CuSO₄ = 0.0100<br><b>C1</b> moles H₂O = 0.0500<br><b>A1</b> x = 5` }
   ]
 });
 }

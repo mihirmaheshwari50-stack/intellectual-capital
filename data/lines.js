@@ -239,6 +239,23 @@ ${F.plot({ w: 460, h: 260, x: [0, 70], y: [0, 25], gridStep: [10, 5], ticks: { x
       ms: M`(a) <b>B1</b> 60 km/h out <b>B1</b> 0 km/h stopped, 60 km/h back<br>(b) <b>M1</b> $\dfrac{240}{5}$ <b>A1</b> 48 km/h` },
     { type: "struct", marks: 4, q: M`Find the equation of the line through $(3,-1)$ perpendicular to $4x-2y=7$. Give your answer in the form $ax+by=c$.`,
       ms: M`<b>M1</b> $y=2x-3.5$, gradient 2<br><b>M1</b> perpendicular gradient $-\tfrac12$<br><b>M1</b> $y+1=-\tfrac12(x-3)$<br><b>A1</b> $x+2y=1$` }
+  ],
+  exam: [
+    { d: 1, type: "struct", marks: 2, q: M`Find the gradient of the line through $(1, 3)$ and $(4, 12)$.`, ms: M`<b>M1</b> $\dfrac{12-3}{4-1}$<br><b>A1</b> 3` },
+    { d: 1, type: "mcq", marks: 1, q: M`The $y$-intercept of $y=4x-7$ is`, opts: ["4", "−7", "7", "$\tfrac74$"], ans: 1, why: M`$c=-7$.` },
+    { d: 1, type: "struct", marks: 2, q: M`Find the midpoint of $(2, -1)$ and $(8, 5)$.`, ms: M`<b>M1</b> $\left(\frac{2+8}{2}, \frac{-1+5}{2}\right)$<br><b>A1</b> $(5, 2)$` },
+    { d: 1, type: "struct", marks: 1, q: M`Write down the gradient of the line $y=5-2x$.`, ms: M`<b>B1</b> −2` },
+    { d: 1, type: "mcq", marks: 1, q: M`Which line is parallel to $y=3x+1$?`, opts: ["$y=-3x+1$", "$y=3x-4$", "$y=\tfrac13x$", "$y=x+3$"], ans: 1, why: M`Same gradient, 3.` },
+    { d: 2, type: "struct", marks: 3, q: M`Find the equation of the line through $(2, 7)$ with gradient $-3$.`, ms: M`<b>M1</b> $7=-3(2)+c$<br><b>A1</b> $c=13$<br><b>A1</b> $y=-3x+13$` },
+    { d: 2, type: "struct", marks: 3, q: M`Calculate the length of the line segment from $(-1, 2)$ to $(5, 10)$.`, ms: M`<b>M1</b> $\sqrt{6^2+8^2}$<br><b>A1</b> $\sqrt{100}$<br><b>A1</b> 10` },
+    { d: 2, type: "struct", marks: 2, q: M`Rearrange $2x+3y=12$ into the form $y=mx+c$ and state the gradient.`, ms: M`<b>M1</b> $y=-\tfrac23x+4$<br><b>A1</b> gradient $-\tfrac23$` },
+    { d: 2, type: "struct", marks: 3, q: M`Find the gradient of a line perpendicular to the line through $(0, 1)$ and $(4, 3)$.`, ms: M`<b>M1</b> gradient $=\tfrac{2}{4}=\tfrac12$<br><b>M1</b> perpendicular: $m_1m_2=-1$<br><b>A1</b> −2` },
+    { d: 2, type: "mcq", marks: 1, q: M`The line $y=2x-6$ crosses the $x$-axis at`, opts: ["(−6, 0)", "(3, 0)", "(0, −6)", "(−3, 0)"], ans: 1, why: M`Set $y=0$: $x=3$.` },
+    { d: 2, type: "struct", marks: 3, q: M`Find the coordinates of the point where $y=2x+1$ meets $y=-x+7$.`, ms: M`<b>M1</b> $2x+1=-x+7$<br><b>A1</b> $x=2$<br><b>A1</b> $(2, 5)$` },
+    { d: 3, type: "struct", marks: 4, q: M`$A=(1, 4)$ and $B=(7, -2)$. Find the equation of the perpendicular bisector of $AB$.`, ms: M`<b>B1</b> midpoint $(4, 1)$<br><b>B1</b> gradient $AB=-1$<br><b>M1</b> perpendicular gradient 1<br><b>A1</b> $y=x-3$` },
+    { d: 3, type: "struct", marks: 4, q: M`The points $P(2, 3)$, $Q(6, 5)$ and $R(k, 11)$ lie on a straight line. Find $k$.`, ms: M`<b>M1</b> gradient $PQ=\tfrac{2}{4}=\tfrac12$<br><b>M1</b> $\tfrac{11-5}{k-6}=\tfrac12$<br><b>M1</b> $k-6=12$<br><b>A1</b> $k=18$` },
+    { d: 3, type: "struct", marks: 4, q: M`Show that the triangle with vertices $(0, 0)$, $(4, 2)$ and $(1, 8)$ has a right angle at $(4, 2)$.`, ms: M`<b>M1</b> gradient from (0,0) to (4,2) = $\tfrac12$<br><b>M1</b> gradient from (4,2) to (1,8) = $\tfrac{6}{-3}=-2$<br><b>M1</b> product $=\tfrac12\times(-2)=-1$<br><b>A1</b> perpendicular, so right angle at (4, 2)` },
+    { d: 3, type: "struct", marks: 3, q: M`Find the equation of the line parallel to $3x+2y=6$ passing through $(4, -1)$. Give your answer in the form $ax+by=c$.`, ms: M`<b>B1</b> gradient $-\tfrac32$<br><b>M1</b> $3x+2y=c$ with $3(4)+2(-1)=c$<br><b>A1</b> $3x+2y=10$` }
   ]
 });
 }

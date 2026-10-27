@@ -301,6 +301,24 @@ ${F.row(
       ms: C`<b>B1</b> both are giant ionic lattices<br><b>B1</b> Mg²⁺/O²⁻ have higher charges than Na⁺/Cl⁻<br><b>B1</b> so stronger electrostatic attraction, needing more energy to overcome` },
     { type: "struct", marks: 3, q: C`Describe metallic bonding and use it to explain why copper conducts electricity.`,
       ms: C`<b>B1</b> lattice of positive ions<br><b>B1</b> in a sea of delocalised electrons, held by electrostatic attraction<br><b>B1</b> delocalised electrons are free to move through the structure and carry charge` }
+  ],
+  exam: [
+    { d: 1, type: "struct", marks: 2, q: C`State the number of protons and neutrons in an atom of ²³Na (atomic number 11).`, ms: C`<b>B1</b> 11 protons<br><b>B1</b> 12 neutrons` },
+    { d: 1, type: "struct", marks: 1, q: C`Write the electronic configuration of chlorine (atomic number 17).`, ms: C`<b>B1</b> 2,8,7` },
+    { d: 1, type: "mcq", marks: 1, q: C`Which type of bonding is found in sodium chloride?`, opts: ["covalent", "ionic", "metallic", "hydrogen"], ans: 1, why: C`Metal + non-metal.` },
+    { d: 1, type: "struct", marks: 2, q: C`Define isotopes.`, ms: C`<b>B1</b> atoms of the same element / same proton number<br><b>B1</b> different numbers of neutrons (different mass numbers)` },
+    { d: 1, type: "mcq", marks: 1, q: C`How many covalent bonds are in a molecule of methane, CH₄?`, opts: ["1", "2", "4", "8"], ans: 2, why: C`Four C–H.` },
+    { d: 1, type: "struct", marks: 2, q: C`State the charge on the ion formed by (a) magnesium, (b) oxygen.`, ms: C`<b>B1</b> 2+<br><b>B1</b> 2−` },
+    { d: 2, type: "struct", marks: 3, q: C`Draw a dot-and-cross diagram for magnesium oxide, showing outer electrons only.`, ms: C`<b>B1</b> Mg²⁺ with empty / full outer shell shown in brackets<br><b>B1</b> O²⁻ with 8 outer electrons (6 dots + 2 crosses)<br><b>B1</b> correct charges` },
+    { d: 2, type: "struct", marks: 3, q: C`Explain why sodium chloride has a high melting point.`, ms: C`<b>B1</b> giant ionic lattice<br><b>B1</b> strong electrostatic attraction between oppositely charged ions<br><b>B1</b> lots of energy needed to overcome these forces` },
+    { d: 2, type: "struct", marks: 3, q: C`Explain why ionic compounds conduct electricity when molten but not when solid.`, ms: C`<b>B1</b> solid: ions held in fixed positions in the lattice<br><b>B1</b> molten: ions free to move<br><b>B1</b> moving ions carry charge` },
+    { d: 2, type: "struct", marks: 2, q: C`Draw a dot-and-cross diagram for a molecule of water.`, ms: C`<b>B1</b> two shared pairs O–H<br><b>B1</b> two lone pairs on oxygen` },
+    { d: 2, type: "struct", marks: 3, q: C`S: Calculate the relative atomic mass of chlorine, which is 75% ³⁵Cl and 25% ³⁷Cl.`, ms: C`<b>M1</b> (75 × 35 + 25 × 37)<br><b>M1</b> ÷ 100<br><b>A1</b> 35.5` },
+    { d: 2, type: "mcq", marks: 1, q: C`Why does graphite conduct electricity?`, opts: ["it has free ions", "each carbon has one delocalised electron", "it is a metal", "it has weak intermolecular forces"], ans: 1, why: C`Delocalised electrons move between layers.` },
+    { d: 3, type: "struct", marks: 4, q: C`S: Explain, in terms of structure and bonding, why diamond is hard but graphite is soft and slippery.`, ms: C`<b>B1</b> both giant covalent structures<br><b>B1</b> diamond: each C bonded to 4 others in a rigid tetrahedral lattice<br><b>B1</b> graphite: each C bonded to 3 in layers<br><b>B1</b> weak forces between layers allow them to slide` },
+    { d: 3, type: "struct", marks: 4, q: C`S: Silicon(IV) oxide melts at 1710 °C; carbon dioxide is a gas at room temperature. Explain the difference.`, ms: C`<b>B1</b> SiO₂: giant covalent structure<br><b>B1</b> many strong covalent bonds must be broken to melt<br><b>B1</b> CO₂: simple molecules<br><b>B1</b> weak intermolecular forces need little energy to overcome` },
+    { d: 3, type: "struct", marks: 4, q: C`S: Describe metallic bonding and use it to explain why metals are malleable and good conductors of electricity.`, ms: C`<b>B1</b> lattice of positive ions in a sea of delocalised electrons<br><b>B1</b> strong attraction between ions and electrons<br><b>B1</b> layers of ions can slide without breaking the bonding (malleable)<br><b>B1</b> delocalised electrons move and carry charge (conduct)` },
+    { d: 3, type: "struct", marks: 3, q: C`S: Draw a dot-and-cross diagram for nitrogen, N₂, and explain why nitrogen is unreactive.`, ms: C`<b>B1</b> three shared pairs between the N atoms<br><b>B1</b> one lone pair on each N<br><b>B1</b> the triple bond is very strong and needs a lot of energy to break` }
   ]
 });
 }
