@@ -432,4 +432,78 @@
       if (desc !== last) { out.innerHTML = desc; last = desc; }
     });
   };
+
+  // ---------- Magnetism helpers: dipole field from two poles ----------
+  const field = (x, y, poles) => { let bx = 0, by = 0; poles.forEach(([px, py, q]) => { const dx = x - px, dy = y - py, r3 = Math.pow(dx * dx + dy * dy, 1.5) + 1e-6; bx += q * dx / r3; by += q * dy / r3; }); return [bx, by]; };
+  function streamline(x, y, poles, W, H, dir = 1, steps = 600) { const pts = [[x, y]]; for (let i = 0; i < steps; i++) { const [bx, by] = field(x, y, poles), m = Math.hypot(bx, by) || 1; x += dir * 3 * bx / m; y += dir * 3 * by / m; pts.push([x, y]); if (x < 0 || x > W || y < 0 || y > H || poles.some(([px, py, q]) => q * dir < 0 && Math.hypot(x - px, y - py) < 8)) break; } return pts; }
+  function barMagnet(ctx, cx, cy, L, T) { ctx.fillStyle = cs("--bad"); ctx.fillRect(cx, cy - T / 2, L / 2, T); ctx.fillStyle = cs("--maths"); ctx.fillRect(cx - L / 2, cy - T / 2, L / 2, T); text(ctx, "N", cx + L / 4, cy + 5, { size: 15, weight: 700, align: "center", color: "#fff" }); text(ctx, "S", cx - L / 4, cy + 5, { size: 15, weight: 700, align: "center", color: "#fff" }); }
+  function compass(ctx, x, y, ang, r = 11) { ctx.fillStyle = cs("--surface") || "#fff"; ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+    const c = Math.cos(ang), s2 = Math.sin(ang); ctx.fillStyle = cs("--bad"); ctx.beginPath(); ctx.moveTo(x + c * (r - 2), y + s2 * (r - 2)); ctx.lineTo(x - s2 * 3, y + c * 3); ctx.lineTo(x + s2 * 3, y - c * 3); ctx.fill(); ctx.fillStyle = cs("--maths"); ctx.beginPath(); ctx.moveTo(x - c * (r - 2), y - s2 * (r - 2)); ctx.lineTo(x - s2 * 3, y + c * 3); ctx.lineTo(x + s2 * 3, y - c * 3); ctx.fill(); }
+
+  V.fieldPlot = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W / 2, cy = H / 2, L = Math.min(180, W * .3), poles = [[cx + L / 2 - 6, cy, 1], [cx - L / 2 + 6, cy, -1]];
+    // full field lines, faint
+    const starts = []; for (let k = 0; k < 14; k++) { const a = (k + .5) / 14 * Math.PI * 2; starts.push([poles[0][0] + 10 * Math.cos(a), poles[0][1] + 10 * Math.sin(a)]); }
+    const lines = starts.map(([x, y]) => streamline(x, y, poles, W, H));
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1.5; lines.forEach(pts => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); });
+    // the line being traced by a moving compass
+    const tr = lines[3], k = Math.min(tr.length - 1, Math.floor((t / P) * tr.length * 1.05));
+    ctx.strokeStyle = cs("--physics"); ctx.lineWidth = 2.5; ctx.beginPath(); tr.slice(0, k + 1).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    for (let j = 0; j <= k; j += 18) { const [x, y] = tr[j]; const [bx, by] = field(x, y, poles); if (j < k - 6) dot(ctx, x, y, 2.5, cs("--physics")); }
+    barMagnet(ctx, cx, cy, L, 30);
+    const [x, y] = tr[k], [bx, by] = field(x, y, poles); compass(ctx, x, y, Math.atan2(by, bx), 13);
+    // static compasses around
+    [[cx, cy - 70], [cx, cy + 70], [cx + L * .9, cy], [cx - L * .9, cy], [cx + L * .7, cy - 80], [cx - L * .7, cy + 80]].forEach(([qx, qy]) => { const [fx, fy] = field(qx, qy, poles); compass(ctx, qx, qy, Math.atan2(fy, fx), 10); });
+    text(ctx, "Mark where the compass needle points, move the compass to that dot, repeat. Join the dots.", 14, 20, { size: 12, color: cs("--muted") });
+  }, { h: 340, period: 9, caption: "Plotting compass method: the N end of the needle shows the field direction, from N to S" });
+
+  // ---------- Field around a straight wire, reversing current ----------
+  V.wireField = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W / 2, cy = H / 2 + 6, up = (t % P) < P / 2, c = cs("--physics");
+    [40, 70, 105, 145].forEach((r, i) => { ctx.strokeStyle = cs("--maths") + ["", "cc", "99", "66"][i]; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4 + (up ? 1 : -1) * t * .6, x = cx + r * Math.cos(a), y = cy + r * Math.sin(a), d = up ? -1 : 1; arrow(ctx, x, y, x - d * 10 * Math.sin(a), y + d * 10 * Math.cos(a), cs("--maths"), 2); } });
+    ctx.fillStyle = cs("--surface"); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 16, 0, 7); ctx.fill(); ctx.stroke();
+    if (up) dot(ctx, cx, cy, 5, c); else { ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); }
+    text(ctx, up ? "current out of the page (•): field anticlockwise" : "current into the page (×): field clockwise", 16, 22, { size: 13, weight: 600 });
+    text(ctx, "circles closer together near the wire = stronger field", 16, H - 12, { size: 12, color: cs("--muted") });
+  }, { h: 340, period: 8, caption: "Right-hand grip rule: thumb along the current, fingers curl the way the field goes. Reverse the current, reverse the field." });
+
+  // ---------- Relay ----------
+  V.relay = (host) => mount(host, (ctx, W, H, t, P) => {
+    const on = (t % P) > P * .25 && (t % P) < P * .75, ink = cs("--ink"), c = cs("--physics"), g = cs("--chem");
+    const x0 = 30, cx = W * .34, cy = H / 2 + 40;
+    ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.strokeRect(x0, cy - 30, cx - x0 - 40, 100);
+    ctx.fillStyle = cs("--muted"); ctx.fillRect(cx - 40, cy - 30, 40, 60); for (let i = 0; i < 6; i++) { ctx.strokeStyle = c; ctx.beginPath(); ctx.ellipse(cx - 20, cy - 25 + i * 10, 24, 5, 0, 0, 7); ctx.stroke(); }
+    text(ctx, "coil + soft iron core", cx - 20, cy + 50, { size: 11, align: "center", color: cs("--muted") }); text(ctx, "control switch " + (on ? "closed" : "open"), x0 + 6, cy + 90, { size: 12, weight: 600 });
+    if (on) for (let k = 0; k < 4; k++) dot(ctx, x0 + ((t * 80 + k * 60) % (cx - x0 - 40)), cy + 70, 3, c, 8);
+    const px = cx + 100, py = cy - 46, ang = on ? -.13 : .06;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.fillStyle = ink; ctx.fillRect(-110, -4, 146, 8); ctx.restore(); dot(ctx, px, py, 5, ink);
+    text(ctx, "pivot", px - 8, py + 22, { size: 11, color: cs("--muted"), align: "center" }); text(ctx, "iron armature", px - 70, py - 14, { size: 11, color: cs("--muted"), align: "center" });
+    const fx = px + 36, fy = py - 7; dot(ctx, fx, fy, 4, ink);
+    const R = W - 30, top = py - 100;
+    ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, top); ctx.lineTo(R, top); ctx.lineTo(R, py + 36); ctx.lineTo(px, py + 36); ctx.lineTo(px, py); ctx.stroke();
+    ctx.beginPath(); ctx.arc(R, (top + py + 36) / 2, 18, 0, 7); ctx.fillStyle = on ? "#f6c643" : cs("--surface"); ctx.fill(); ctx.stroke(); text(ctx, "high-current motor / lamp", R - 26, (top + py + 36) / 2 + 4, { size: 11, align: "right" });
+    if (on) for (let k = 0; k < 6; k++) { const f = ((t * .6 + k / 6) % 1), L = (R - fx) * 2 + 140, d = f * L; let x, y; if (d < R - fx) { x = fx + d; y = top; } else if (d < R - fx + 140) { x = R; y = top + (d - (R - fx)); } else { x = R - (d - (R - fx) - 140); y = py + 36; } dot(ctx, x, y, 3, g, 8); }
+    text(ctx, on ? "small current magnetises core → armature pulled down → contacts close → large current flows" : "no current in coil → spring holds contacts apart → second circuit OFF", 16, 22, { size: 13, weight: 600, color: on ? g : cs("--muted") });
+  }, { h: 330, period: 6, caption: "A relay lets a small, safe current in one circuit switch on a large current in another" });
+
+  // ---------- Interactive: electromagnet strength ----------
+  DEMOS.electromagnet = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280); let core = true;
+    const segEl = document.createElement("div"); segEl.className = "seg"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = `<button aria-pressed="true" data-c="1">soft iron core</button><button aria-pressed="false" data-c="0">no core (air)</button>`;
+    segEl.onclick = e => { const bt = e.target.closest("button"); if (!bt) return; core = bt.dataset.c === "1"; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === bt)); };
+    root.appendChild(segEl);
+    const v = controls(root, [{ key: "I", label: "current (A)", min: 0, max: 3, step: .1, value: 1.5 }, { key: "N", label: "turns on coil", min: 10, max: 100, step: 10, value: 50 }]);
+    const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const B = v.I * v.N * (core ? 1 : .05), clips = Math.min(14, Math.floor(B / 9)), cx = w / 2;
+      ctx.fillStyle = core ? css("--muted") : "transparent"; ctx.strokeStyle = css("--muted"); ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(cx - 20, 20, 40, 110, 4); ctx.fill(); ctx.stroke();
+      const turns = Math.round(v.N / 10); for (let i = 0; i < turns; i++) { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, 30 + i * 90 / Math.max(1, turns - 1 || 1), 32, 6, 0, 0, 7); ctx.stroke(); }
+      for (let i = 0; i < clips; i++) { const y = 140 + i * 9, sway = Math.sin(tt * 2 + i) * i * .6; ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(cx - 8 + sway, y, 16, 8, 4); ctx.stroke(); }
+      for (let i = clips; i < 14; i++) { ctx.strokeStyle = css("--line"); ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(cx + 100 + (i % 5) * 22, h - 20 - Math.floor(i / 5) * 12, 16, 8, 4); ctx.stroke(); }
+      const txt = `Picks up ${clips} paperclip${clips === 1 ? "" : "s"}. Strength grows with the current (${v.I} A) and the number of turns (${v.N}). ${core ? "The soft iron core concentrates the field, making it hundreds of times stronger." : "Without an iron core the field is very weak."} Switch the current off and soft iron loses its magnetism at once.`;
+      if (txt !== last) { out.innerHTML = txt; last = txt; }
+    });
+  };
 })();
