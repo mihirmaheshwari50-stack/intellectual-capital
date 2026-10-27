@@ -361,5 +361,67 @@
     });
   };
 
+  // ---------- Greenhouse effect ----------
+  V.greenhouse = (host) => mount(host, (ctx, W, H, t, P) => {
+    const gy = H - 50, atm = 90;
+    ctx.fillStyle = "#6aa84f55"; ctx.fillRect(0, gy, W, 50); text(ctx, "Earth's surface (warmed, then emits infrared)", 16, H - 16, { size: 12, color: cs("--ink"), weight: 600 });
+    ctx.fillStyle = cs("--maths") + "14"; ctx.fillRect(0, atm, W, gy - atm); ctx.setLineDash([4, 5]); ctx.strokeStyle = cs("--muted"); ctx.beginPath(); ctx.moveTo(0, atm); ctx.lineTo(W, atm); ctx.stroke(); ctx.setLineDash([]);
+    text(ctx, "atmosphere with greenhouse gases (CO₂, CH₄, H₂O)", W - 16, atm + 18, { size: 12, align: "right", color: cs("--muted") });
+    ctx.fillStyle = "#f5b82e"; ctx.beginPath(); ctx.arc(40, 34, 20, 0, 7); ctx.fill(); text(ctx, "Sun", 40, 70, { size: 12, weight: 700, align: "center" });
+    for (let i = 0; i < 6; i++) { 
+      const ph = ((t / 3) + i / 6) % 1, x0 = 70 + i * (W - 160) / 5;
+      // incoming short-wave (yellow), straight down at slight angle
+      const yIn = 70 + ph * (gy - 70); if (ph < 1) { ctx.strokeStyle = "#f2b01e"; ctx.lineWidth = 2.5; ctx.beginPath(); for (let y = Math.max(70, yIn - 50); y < yIn; y += 2) ctx.lineTo(x0 + (y - 20) * .15 + 3 * Math.sin(y * .5), y); ctx.stroke(); }
+      // outgoing infrared (red, longer wavelength): goes up, some absorbed and re-emitted downward
+      const ph2 = ((t / 3) + i / 6 + .5) % 1, xs = x0 + (gy - 20) * .15, absorbed = i % 3 !== 0;
+      const up = absorbed ? Math.min(ph2 * 2, 1) : ph2, yo = gy - up * (gy - (absorbed ? atm + 40 + 30 * rnd(i, 1) : 0));
+      ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2; ctx.beginPath(); for (let y = gy; y > yo; y -= 2) ctx.lineTo(xs + (gy - y) * .1 + 5 * Math.sin(y * .18), y); ctx.stroke();
+      if (absorbed && ph2 > .5) { const yy = yo, back = (ph2 - .5) * 2, y2 = yy + back * (gy - yy); dot(ctx, xs + (gy - yy) * .1, yy, 6, cs("--chem")); ctx.strokeStyle = cs("--bad") + "aa"; ctx.beginPath(); for (let y = yy; y < y2; y += 2) ctx.lineTo(xs + (gy - yy) * .1 + 18 + 5 * Math.sin(y * .18), y); ctx.stroke(); }
+    }
+    text(ctx, "short-wave radiation passes through", W * .35, 40, { size: 12, color: "#c48a0a", weight: 600 }); text(ctx, "infrared absorbed and re-emitted by greenhouse gases", W * .35, 58, { size: 12, color: cs("--bad"), weight: 600 });
+  }, { h: 330, period: 6, caption: "The greenhouse effect: greenhouse gases absorb infrared from the Earth and re-emit it in all directions, keeping heat in" });
+
+  // ---------- Catalytic converter ----------
+  V.catalytic = (host) => mount(host, (ctx, W, H, t, P) => {
+    const x0 = W * .3, x1 = W * .7, y0 = 60, y1 = H - 60, yc = (y0 + y1) / 2;
+    ctx.fillStyle = "#c0c4ca44"; ctx.beginPath(); ctx.roundRect(x0, y0, x1 - x0, y1 - y0, 20); ctx.fill(); ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.stroke();
+    for (let i = 1; i < 8; i++) { ctx.strokeStyle = "#b8a14a88"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x0 + 10, y0 + i * (y1 - y0) / 8); ctx.lineTo(x1 - 10, y0 + i * (y1 - y0) / 8); ctx.stroke(); }
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, yc - 18); ctx.lineTo(x0, yc - 18); ctx.moveTo(0, yc + 18); ctx.lineTo(x0, yc + 18); ctx.moveTo(x1, yc - 18); ctx.lineTo(W, yc - 18); ctx.moveTo(x1, yc + 18); ctx.lineTo(W, yc + 18); ctx.stroke();
+    const IN = [["CO", "#666"], ["NO", "#c0562a"], ["CₓHᵧ", "#8a6d3b"]], OUT = [["CO₂", "#3b7fd0"], ["N₂", "#4fae6a"], ["H₂O", "#4fb0c6"]];
+    for (let i = 0; i < 9; i++) { const ph = (t / 4 + i / 9) % 1, x = ph * W, y = yc + (rnd(i, 1) - .5) * 24 + (x > x0 && x < x1 ? Math.sin(x * .05 + i) * (y1 - y0) * .32 : 0), k = i % 3;
+      const [l, c] = x < (x0 + x1) / 2 ? IN[k] : OUT[k]; dot(ctx, x, y, 11, c); text(ctx, l, x, y + 4, { size: 9, align: "center", color: "#fff", weight: 700 }); }
+    text(ctx, "from engine:", 10, yc - 50, { size: 12, weight: 600 }); text(ctx, "CO, NOₓ, CₓHᵧ", 10, yc - 32, { size: 12 }); text(ctx, "to exhaust:", W - 10, yc - 50, { size: 12, weight: 600, align: "right" }); text(ctx, "CO₂, N₂, H₂O", W - 10, yc - 32, { size: 12, align: "right" });
+    text(ctx, "honeycomb coated with platinum / rhodium catalyst (large surface area)", W / 2, y1 + 22, { size: 12, align: "center", color: cs("--muted") });
+    text(ctx, "2CO + 2NO → 2CO₂ + N₂", W / 2, 30, { size: 14, align: "center", weight: 700 });
+  }, { h: 280, period: 8, caption: "A catalytic converter turns toxic exhaust gases into less harmful ones" });
+
+  // ---------- Interactive: water treatment ----------
+  DEMOS.watertreat = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const st = [["River water", "Raw water from a river or reservoir: cloudy with soil particles, leaves, dissolved substances and microbes."], ["Screening", "A mesh removes large floating objects such as twigs, leaves and plastic."], ["Sedimentation", "Water is left in tanks so heavy insoluble particles settle to the bottom. (A flocculant such as aluminium sulfate can be added to clump small particles together so they settle.)"], ["Filtration", "Water passes through beds of sand and gravel, which trap the remaining small insoluble particles."], ["Carbon", "Activated carbon (charcoal) adsorbs substances that cause unpleasant tastes and odours."], ["Chlorination", "Chlorine is added to kill harmful microbes (bacteria), making the water safe to drink."]];
+    let s = 0, t0 = 0; const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px";
+    segEl.innerHTML = st.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${i}. ${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; s = +b.dataset.i; t0 = performance.now() / 1000; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl); const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(), el = Math.min(1, (tt - t0) / 2.5); ctx.clearRect(0, 0, w, h);
+      const tx = w * .12, tw = w * .42, ty = 40, th = h - 80;
+      const big = s >= 1 ? 0 : 1, susp = s >= 3 ? 0 : s === 2 ? 1 - el : 1, smell = s >= 4 ? (s === 4 ? 1 - el : 0) : 1, mic = s >= 5 ? 1 - el : 1;
+      ctx.fillStyle = `rgba(${Math.round(120 + 40 * (1 - susp))},${Math.round(150 + 40 * (1 - susp))},${Math.round(160 + 60 * (1 - susp))},${.35 + .25 * susp})`; ctx.fillRect(tx, ty + 20, tw, th - 20);
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, ty + th); ctx.lineTo(tx + tw, ty + th); ctx.lineTo(tx + tw, ty); ctx.stroke();
+      for (let i = 0; i < 40; i++) { const settled = s >= 2, x = tx + 8 + rnd(i, 1) * (tw - 16), yFree = ty + 30 + bounce(rnd(i, 2) * (th - 50) + tt * 8 * (rnd(i, 3) - .5), th - 50), yS = ty + th - 6 - rnd(i, 4) * 10, y = settled ? (s === 2 ? yFree + (yS - yFree) * el : yS) : yFree; if (s >= 3) continue; ctx.fillStyle = "#8a6d3b"; ctx.fillRect(x - 2, y - 2, 4, 4); }
+      if (big) for (let i = 0; i < 4; i++) { ctx.fillStyle = "#4b7a2a"; ctx.beginPath(); ctx.ellipse(tx + 30 + i * tw / 4, ty + 26 + 3 * Math.sin(tt * 2 + i), 14, 5, i, 0, 7); ctx.fill(); }
+      if (s === 3) { ctx.fillStyle = "#d9c79a"; ctx.fillRect(tx + 2, ty + th - 40, tw - 4, 38); ctx.fillStyle = "#999"; for (let i = 0; i < 30; i++) ctx.fillRect(tx + 4 + rnd(i, 7) * (tw - 10), ty + th - 14 + rnd(i, 8) * 10, 4, 3); text(ctx, "sand and gravel", tx + tw / 2, ty + th - 18, { size: 11, align: "center", color: "#6b5a2a" }); }
+      if (s === 4) { ctx.fillStyle = "#333"; ctx.fillRect(tx + 2, ty + th - 30, tw - 4, 28); text(ctx, "activated carbon", tx + tw / 2, ty + th - 12, { size: 11, align: "center", color: "#fff" }); }
+      for (let i = 0; i < 10; i++) { if (rnd(i, 9) > mic) continue; const x = tx + 20 + rnd(i, 10) * (tw - 40) + 6 * Math.sin(tt * 2 + i), y = ty + 40 + rnd(i, 11) * (th - 90) + 6 * Math.cos(tt * 2 + i); ctx.strokeStyle = "#6a1b9a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y, 6, 3, i, 0, 7); ctx.stroke(); }
+      if (s >= 5 && el < 1) for (let i = 0; i < 8; i++) dot(ctx, tx + 20 + rnd(i, 12) * (tw - 40), ty + 20 + el * (th - 40) * rnd(i, 13), 3, "#a8c23a");
+      const gx = w * .62, bars = [["insoluble particles", susp * (s >= 1 ? .8 : 1)], ["tastes / odours", smell], ["harmful microbes", mic]];
+      text(ctx, "contamination remaining", gx, 40, { size: 12, weight: 700, color: css("--muted") });
+      bars.forEach(([n, v], i) => { const y = 64 + i * 56; text(ctx, n, gx, y, { size: 12 }); ctx.fillStyle = css("--muted") + "33"; ctx.fillRect(gx, y + 8, w * .32, 14); ctx.fillStyle = v > .5 ? css("--bad") : v > .05 ? "#e0a030" : col; ctx.fillRect(gx, y + 8, w * .32 * Math.max(.02, v), 14); });
+      text(ctx, s === 5 && el > .99 ? "✓ safe to drink" : "", gx, h - 30, { size: 15, weight: 700, color: col });
+      const msg = `<b>Stage ${s}: ${st[s][0]}.</b> ${st[s][1]}`; if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._chem = { rnd, bounce };
 })();
