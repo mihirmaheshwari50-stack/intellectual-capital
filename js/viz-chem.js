@@ -113,5 +113,37 @@
         out.innerHTML = `Broken: ${list(r.br)} = <b>${inE}</b> kJ. Made: ${list(r.mk)} = <b>${outE}</b> kJ. $\\Delta H = ${inE} - ${outE} = ${dH > 0 ? "+" : ""}${dH}$ kJ/mol: <b>${dH < 0 ? "exothermic" : "endothermic"}</b>.`; typeset(out); last = k; }
     });
   };
+
+  // ---------- Dynamic equilibrium: A ⇌ B, concentrations level off ----------
+  V.equilibrium = (host) => mount(host, (ctx, W, H, t, P) => {
+    const kf = .5, kr = .25, A = (s) => (kr + kf * Math.exp(-(kf + kr) * s)) / (kf + kr), tt = Math.min(t, P - .5);
+    const bx = 20, bw = W * .42, by = 30, bh = H - 70, n = 40, a = A(tt);
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh); text(ctx, "closed flask", bx + bw / 2, by + bh + 18, { size: 11, align: "center", color: cs("--muted") });
+    for (let i = 0; i < n; i++) { const isA = (i / n) < a, x = bx + 8 + bounce(rnd(i, 1) * (bw - 16) + (60 + 40 * rnd(i, 3)) * t, bw - 16), y = by + 8 + bounce(rnd(i, 2) * (bh - 16) + (50 + 40 * rnd(i, 4)) * t, bh - 16);
+      dot(ctx, x, y, 6, isA ? cs("--maths") : cs("--physics")); }
+    const gx = bx + bw + 50, gw = W - gx - 20, gy = by, gh = bh;
+    ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+    text(ctx, "concentration", gx + 6, gy + 6, { size: 11, color: cs("--muted") }); text(ctx, "time", gx + gw, gy + gh + 16, { size: 11, color: cs("--muted"), align: "right" });
+    const X = (s) => gx + s / P * gw, Y = (c) => gy + gh - c * gh * .9;
+    [[A, cs("--maths"), "reactant A"], [(s) => 1 - A(s), cs("--physics"), "product B"]].forEach(([f, c, l]) => { ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); for (let s2 = 0; s2 <= tt; s2 += .05) { s2 ? ctx.lineTo(X(s2), Y(f(s2))) : ctx.moveTo(X(s2), Y(f(s2))); } ctx.stroke(); text(ctx, l, X(tt) + 6, Y(f(tt)) + 4, { size: 11, color: c, weight: 600 }); });
+    if (tt > 6) text(ctx, "equilibrium: rates equal, concentrations constant", gx, gy - 10, { size: 12, weight: 700, color: cs("--chem") });
+  }, { h: 300, period: 12, caption: "Reactions never stop at equilibrium: A turns into B and B into A at the same rate" });
+
+  // ---------- Interactive: Haber process conditions ----------
+  DEMOS.haber = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    const v = DEMOS._lib.controls(root, [{ key: "T", label: "temperature (°C)", min: 300, max: 600, step: 10, value: 450 }, { key: "P", label: "pressure (atm)", min: 25, max: 400, step: 5, value: 200 }]);
+    const out = readout(root); let last = "";
+    const yieldOf = (T, P) => 100 * P / (P + 200 * Math.exp(.0086 * (T - 350))), rateOf = (T) => Math.exp((T - 450) / 45);
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h); const gx = 50, gy = 20, gw = w - 90, gh = h - 60;
+      ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = "12px Inter, sans-serif"; ctx.fillText("% ammonia at equilibrium", gx + 6, gy + 10); ctx.fillText("pressure (atm) →", gx + gw - 100, gy + gh + 18);
+      [[350, css("--maths")], [450, col], [550, css("--bad")]].forEach(([T, c]) => { ctx.strokeStyle = c; ctx.lineWidth = T === 450 ? 3 : 2; ctx.beginPath(); for (let P = 0; P <= 400; P += 5) { const X = gx + P / 400 * gw, Y = gy + gh - yieldOf(T, P) / 80 * gh; P ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); } ctx.stroke(); ctx.fillStyle = c; ctx.fillText(T + " °C", gx + gw - 44, gy + gh - yieldOf(T, 400) / 80 * gh - 6); });
+      const y = yieldOf(v.T, v.P); dot(ctx, gx + v.P / 400 * gw, gy + gh - y / 80 * gh, 7, css("--ink"), 10);
+      const r = rateOf(v.T), txt = `At ${v.T} °C and ${v.P} atm: about <b>${y.toFixed(0)}%</b> ammonia at equilibrium, reached ${r > 1.5 ? "quickly" : r < .6 ? "very slowly" : "at a reasonable rate"} (relative rate ×${r.toFixed(1)} with the iron catalyst). Lower temperature gives a higher yield (forward reaction is exothermic) but a slower rate. Higher pressure gives a higher yield (4 molecules of gas → 2) and a faster rate, but costs more and is more dangerous. 450 °C and 200 atm is the compromise. (Yields approximate.)`;
+      if (txt !== last) { out.innerHTML = txt; last = txt; }
+    });
+  };
   V._chem = { rnd, bounce };
 })();
