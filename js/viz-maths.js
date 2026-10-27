@@ -728,5 +728,58 @@
   };
   function rnd2(i, k) { return Math.abs(Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1; }
 
+  // ---------- Histogram with unequal class widths: frequency density ----------
+  V.histDensity = (host) => mount(host, (ctx, W, H, t, P) => {
+    const bins = [[0, 10, 20], [10, 20, 50], [20, 30, 65], [30, 50, 40], [50, 80, 15]]; // lo, hi, freq
+    const k = clamp(t / (P * .8)), gx = 50, gw = W - 80, gy = 20, gh = H - 56, maxX = 80, maxD = Math.max(...bins.map(([a, b, f]) => f / (b - a))) * 1.15;
+    const X = v => gx + v / maxX * gw, Y = v => gy + gh - v / maxD * gh;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+    text(ctx, "frequency density", gx, gy - 4, { size: 12, color: cs("--muted") }); text(ctx, "value", gx + gw, gy + gh + 18, { size: 12, align: "right", color: cs("--muted") });
+    bins.forEach(([a, b, f], i) => { const d = f / (b - a), kk = clamp(k * bins.length - i); if (kk <= 0) return; ctx.globalAlpha = kk; ctx.fillStyle = cs("--maths") + "55"; ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2;
+      ctx.fillRect(X(a), Y(d * kk), X(b) - X(a), Y(0) - Y(d * kk)); ctx.strokeRect(X(a), Y(d * kk), X(b) - X(a), Y(0) - Y(d * kk));
+      text(ctx, a + "–" + b, (X(a) + X(b)) / 2, gy + gh + 18, { size: 11, align: "center" }); text(ctx, "f=" + f, (X(a) + X(b)) / 2, Y(d * kk) - 6, { size: 11, align: "center", weight: 700 }); ctx.globalAlpha = 1; });
+    text(ctx, "frequency density = frequency ÷ class width", W / 2, H - 6, { size: 13, align: "center", weight: 700, color: cs("--maths") });
+  }, { h: 260, period: 7, caption: "With unequal class widths, bar HEIGHT must be frequency density, not frequency, so AREA represents frequency" });
+
+  // ---------- Scatter diagram with line of best fit and correlation types ----------
+  V.correlation = (host) => mount(host, (ctx, W, H, t, P) => {
+    const types = [["strong positive", 1, .15], ["weak negative", -0.5, .55], ["no correlation", 0, 1]];
+    const idx = Math.min(2, Math.floor((t / P) * 3.01)), [lab, slope, noise] = types[idx];
+    const gx = 50, gw = W - 70, gy = 20, gh = H - 50, X = v => gx + v * gw, Y = v => gy + gh - v * gh;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+    for (let i = 0; i < 25; i++) { const x = (i * 37 % 97) / 97, y0 = 0.5 + slope * (x - 0.5), n = (((i * 53) % 97) / 97 - .5) * noise * 2; dot(ctx, X(x), Y(Math.max(0, Math.min(1, y0 + n))), 4, cs("--maths")); }
+    if (idx !== 2) { ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(X(0), Y(0.5 - slope * .5)); ctx.lineTo(X(1), Y(0.5 + slope * .5)); ctx.stroke(); ctx.setLineDash([]); }
+    text(ctx, lab, W / 2, 14, { size: 14, align: "center", weight: 700 });
+  }, { h: 220, period: 9, caption: "Scatter diagrams: positive, negative and no correlation, with a line of best fit" });
+
+  // ---------- Interactive: averages and spread calculator ----------
+  DEMOS.averages = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    let data = [4, 7, 7, 8, 9, 9, 9, 12, 15, 21];
+    const box = document.createElement("div"); box.style.cssText = "margin-top:10px"; box.innerHTML = `<label style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px">Data (comma-separated)</label><input type="text" value="${data.join(', ')}" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:14px monospace">`;
+    const inp = box.querySelector("input"); inp.oninput = () => { const vals = inp.value.split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x)); if (vals.length) data = vals; };
+    root.appendChild(box); const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const sorted = [...data].sort((a, b) => a - b), n = sorted.length, sum = sorted.reduce((a, b) => a + b, 0), mean = sum / n;
+      const median = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+      const freq = {}; sorted.forEach(x => freq[x] = (freq[x] || 0) + 1); let mode = null, mc = 0, tie = false;
+      Object.entries(freq).forEach(([k, c]) => { if (c > mc) { mc = c; mode = k; tie = false; } else if (c === mc) tie = true; });
+      const range = sorted[n - 1] - sorted[0];
+      const q = (p) => { const pos = p * (n - 1), lo = Math.floor(pos), hi = Math.ceil(pos); return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo); };
+      const q1 = q(.25), q3 = q(.75), iqr = q3 - q1;
+      const variance = sorted.reduce((a, x) => a + (x - mean) ** 2, 0) / n, sd = Math.sqrt(variance);
+      // box plot
+      const gx = 40, gw = w - 60, gy = h * .25, bh = 40, lo = sorted[0], hi = sorted[n - 1], X = v => gx + (v - lo) / (hi - lo || 1) * gw;
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(lo), gy + bh / 2); ctx.lineTo(X(q1), gy + bh / 2); ctx.moveTo(X(q3), gy + bh / 2); ctx.lineTo(X(hi), gy + bh / 2); ctx.stroke();
+      ctx.strokeStyle = col; ctx.fillStyle = col + "22"; ctx.fillRect(X(q1), gy, X(q3) - X(q1), bh); ctx.strokeRect(X(q1), gy, X(q3) - X(q1), bh);
+      ctx.beginPath(); ctx.moveTo(X(median), gy); ctx.lineTo(X(median), gy + bh); ctx.stroke();
+      [lo, q1, median, q3, hi].forEach(v => { ctx.beginPath(); ctx.moveTo(X(v), gy - 8); ctx.lineTo(X(v), gy + bh + 8); ctx.stroke(); text(ctx, v.toFixed(1), X(v), gy + bh + 24, { size: 11, align: "center" }); });
+      text(ctx, "box-and-whisker plot (min, Q1, median, Q3, max)", w / 2, gy - 14, { size: 12, align: "center", color: css("--muted") });
+      const msg = `n = ${n}. <b>Mean</b> = ${mean.toFixed(2)}. <b>Median</b> = ${median.toFixed(2)}. <b>Mode</b> = ${tie ? "no unique mode" : mode}. <b>Range</b> = ${range.toFixed(2)}. <b>Q1</b> = ${q1.toFixed(2)}, <b>Q3</b> = ${q3.toFixed(2)}, <b>IQR</b> = ${iqr.toFixed(2)}. Standard deviation ≈ ${sd.toFixed(2)}.`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
