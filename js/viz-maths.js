@@ -228,7 +228,7 @@
       size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
       const [nm, f, form] = T[ty], k = v.k, xv = v.x, ymax = Math.max(k * f(5), k * f(0.5), 1) * 1.05, gx = 40, gw = w - 60, gy = 14, gh = h - 40, X = x => gx + x / 5 * gw, Y = y => gy + gh - Math.min(y, ymax) / ymax * gh;
       ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
-      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); for (let x = .2; x <= 5; x += .02) { const y = k * f(x); x < .21 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y)); } ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); const x0 = ty >= 4 ? .2 : 0; for (let x = x0; x <= 5.001; x += .02) { const y = k * f(x); x === x0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y)); } ctx.stroke();
       const y1 = k * f(xv), y2 = k * f(xv * 2); dot(ctx, X(xv), Y(y1), 6, css("--bad")); if (xv * 2 <= 5) dot(ctx, X(xv * 2), Y(y2), 6, css("--physics"));
       text(ctx, "x", gx + gw, gy + gh + 16, { size: 12, align: "right", color: css("--muted") }); text(ctx, "y", gx - 8, gy + 10, { size: 12, align: "right", color: css("--muted") });
       const fac = y2 / y1, fs = Math.abs(fac - Math.round(fac)) < 1e-9 ? String(Math.round(fac)) : fac < 1 ? "1/" + (+(1 / fac).toFixed(3)) : (+fac.toFixed(3)).toString();
