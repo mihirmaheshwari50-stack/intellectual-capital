@@ -139,7 +139,8 @@ nav.tabs button[aria-current="page"]{color:var(--ink);background:var(--surface);
 .readbar{position:fixed;left:0;right:0;top:64px;height:3px;z-index:29;pointer-events:none}
 .readbar div{height:100%;background:var(--c);transform-origin:0 50%;transform:scaleX(0)}
 .layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px;margin-top:40px}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{display:none!important}}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.toc{display:none!important}}
+article{min-width:0}
 .toc{position:sticky;top:96px;align-self:start;font-size:14px;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 120px);overflow:auto}
 .toc a{display:flex;gap:10px;text-decoration:none;color:var(--muted);padding:6px 12px;border-radius:10px;transition:all .25s var(--ease);line-height:1.4}
 .toc a span{font-variant-numeric:tabular-nums;opacity:.6;font-size:12px;padding-top:1px}

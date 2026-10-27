@@ -1,6 +1,15 @@
 window.TOPICS = window.TOPICS || [];
 {
 const C = String.raw, F = FIG;
+//@@HELPERS-START
+// ---- diagram helpers for this topic ----
+const flask = (x, y, c = "g") => F.path(`M${x - 14},${y} L${x - 14},${y + 30} L${x - 46},${y + 96} Q${x - 50},${y + 106} ${x - 38},${y + 106} L${x + 38},${y + 106} Q${x + 50},${y + 106} ${x + 46},${y + 96} L${x + 14},${y + 30} L${x + 14},${y}`, "k") + F.path(`M${x - 34},${y + 70} L${x - 46},${y + 96} Q${x - 50},${y + 106} ${x - 38},${y + 106} L${x + 38},${y + 106} Q${x + 50},${y + 106} ${x + 46},${y + 96} L${x + 34},${y + 70} Z`, c + "S nostroke");
+const scatterIn = (n, seed, x0, y0, w, h) => { let s = ""; for (let i = 0; i < n; i++) { const r = (k) => Math.abs((Math.sin((i + seed) * 12.9898 + k * 78.233) * 43758.5453) % 1); s += F.circ(x0 + 8 + r(1) * (w - 16), y0 + 8 + r(2) * (h - 16), 6, (i % 2 ? "o" : "b") + "S " + (i % 2 ? "o" : "b")); } return s; };
+const box = (dots, cap, w = 190) => { let s = F.rect(10, 10, w - 20, 140, "k bgF", 8) + dots; return F.fig(w, 160, s, cap, { size: "tiny" }); };
+const scatter = (n, seed, c1 = "o", c2 = "b", W = 170, H = 140) => { let s = ""; for (let i = 0; i < n; i++) { const r = (k) => Math.abs((Math.sin((i + seed) * 12.9898 + k * 78.233) * 43758.5453) % 1); s += F.circ(20 + r(1) * (W - 20), 20 + r(2) * (H - 20), 6, (i % 2 ? c1 : c2) + "S " + (i % 2 ? c1 : c2)); } return s; };
+const path = (H) => (x) => { const t = Math.min(1, Math.max(0, (x - 2.5) / 5)), base = 6 - 3 * t * t * (3 - 2 * t); return base + H * Math.exp(-((x - 5) ** 2) / 1.2); };
+const profile = (o) => F.plot(Object.assign({ w: 460, h: 300, x: [0, 10], y: [0, 10], grid: false, xlabel: "progress of reaction", ylabel: "energy", m: { l: 26, r: 20, t: 16, b: 26 } }, o));
+//@@HELPERS-END
 
 /* ============================================================
    RATES OF REACTION  (0620: 6.2, with Ea from 5.1)
@@ -10,80 +19,171 @@ TOPICS.push({
   blurb: "Measuring rate, reading rate graphs, collision theory, concentration, pressure, surface area, temperature, catalysts and enzymes.",
   level: "Core → Supplement", demo: "rates",
   syllabus: [
-    ["6.2", "Describe practical methods for investigating rate: change in mass and formation of a gas", 1],
-    ["6.2 S", "Evaluate practical methods for investigating the rate of a reaction", 1],
-    ["6.2", "Interpret data, including graphs, from rate experiments", 2],
-    ["6.2 S", "Collision theory: particles per unit volume, collision frequency, kinetic energy, activation energy", 3],
-    ["6.2", "Effect of concentration and pressure on rate (S: explained using collision theory)", 4],
-    ["6.2", "Effect of surface area on rate (S: explained using collision theory)", 5],
-    ["6.2", "Effect of temperature on rate (S: explained using collision theory)", 6],
-    ["6.2", "A catalyst increases rate and is unchanged at the end; enzymes as biological catalysts", 7],
-    ["6.2 S", "A catalyst decreases the activation energy; reaction pathway diagrams", 7]
+    ["6.2", "Describe practical methods for investigating the rate of a reaction, including change in mass and formation of a gas", 1],
+    ["6.2 S", "Evaluate practical methods for investigating the rate of a reaction", 2],
+    ["6.2", "Interpret data, including graphs, from rate-of-reaction experiments", 3],
+    ["6.2 S", "Describe collision theory: particles per unit volume, collision frequency, kinetic energy, activation energy", 4],
+    ["6.2", "Effect of concentration and pressure on rate (S: explained using collision theory)", 5],
+    ["6.2", "Effect of surface area of solids on rate (S: explained using collision theory)", 6],
+    ["6.2", "Effect of temperature on rate (S: explained using collision theory)", 7],
+    ["6.2", "A catalyst increases the rate and is unchanged at the end; enzymes are biological catalysts", 8],
+    ["6.2 S", "A catalyst decreases the activation energy; reaction pathway diagrams with and without a catalyst", 8]
   ],
   sections: [
-    { h: "What 'rate' means", body: C`
-<p>The <b>rate of a reaction</b> is how fast reactants are used up or products are made:</p>
+    { h: "What 'rate of reaction' means", body: C`
+<p class="lead">The <b>rate of a reaction</b> is how quickly reactants are used up or products are formed.</p>
 $$\text{rate}=\frac{\text{change in amount of reactant or product}}{\text{time taken}}$$
-<p>Units follow from what you measure: cm³/s for gas volume, g/s for mass, mol/dm³/s for concentration. Rate is <b>not</b> the same as how much product you get. A fast reaction and a slow one can make exactly the same amount.</p>`},
-    { h: "Measuring rate in the lab", body: C`
-<ul>
-<li><b>Volume of gas</b> produced over time: collect it in a <b>gas syringe</b> and read the volume every 10 s or so. An upturned measuring cylinder or burette of water also works, but only for gases that aren't very soluble.</li>
-<li><b>Loss of mass</b>: run the reaction in a flask on a balance. As gas escapes, the mass falls. Put a cotton-wool plug in the neck so gas can escape but acid spray can't.</li>
-<li><b>Precipitate forming</b> (the disappearing-cross method): sodium thiosulfate + acid makes a cloudy sulfur precipitate. Time how long until a cross under the flask can't be seen. Here $\text{rate}\propto\dfrac{1}{\text{time}}$.</li>
-<li><b>Colour change</b>, observed or measured with a colorimeter.</li>
-</ul>
-<h3>Making it a fair test</h3>
-<p>Change only <b>one</b> variable (the independent variable). Keep everything else the same: volume and concentration of acid, mass and size of solid, temperature, and the same apparatus. Start the timer at the moment the reactants mix.</p>
-<h3>Evaluating methods (S)</h3>
-<ul><li>A <b>gas syringe</b> is more accurate than collecting over water for CO₂, because CO₂ is slightly soluble in water, so some would dissolve and not be measured.</li>
-<li><b>Mass loss</b> is poor for hydrogen: H₂ is so light that the mass change is tiny and hard to measure.</li>
-<li>Some gas escapes before the bung is fitted. Fitting it quickly, or using a divided flask to mix after sealing, reduces this error.</li>
-<li>The disappearing-cross end point is <b>subjective</b>: different people judge it differently. Use the same person, or a light sensor.</li>
-<li>Repeat and calculate a mean to reduce random error. Identify and discard anomalous results.</li></ul>`},
-    { h: "Reading rate graphs", body: C`
-<p>On a graph of product (e.g. gas volume) against time:</p>
+<p>Rates vary enormously: an explosion is over in milliseconds, a precipitate forms in seconds, magnesium fizzes away in a minute, iron rusts over months, and rocks weather over centuries.</p>
+<p>Units depend on what you measure: <b>cm³/s</b> (gas volume), <b>g/s</b> (mass), or <b>mol/dm³/s</b> (concentration).</p>
+<div class="callout warn"><b class="t">Rate is not yield</b>Rate is <i>how fast</i>; the amount of product is <i>how much</i>. A catalyst or a higher temperature makes the same amount of product, just faster. The amount of product depends only on the amount of the limiting reactant.</div>
+<p>To make a reaction faster you can: increase the <b>concentration</b> (or <b>pressure</b> for gases), increase the <b>surface area</b> of a solid, raise the <b>temperature</b>, or add a <b>catalyst</b>. The rest of this lesson explains how to measure rate, how to read rate graphs, and <i>why</i> each of these works.</p>`},
+
+    { h: "Measuring the rate: practical methods (6.2)", body: C`
+<p class="lead">To measure a rate you track something that changes as the reaction proceeds, at regular time intervals. The main methods are below.</p>
+${  (() => { let s = flask(90, 50) + F.rect(70, 34, 40, 16, "k mS", 3) + F.line(90, 34, 90, 20, "k") + F.line(90, 20, 200, 20, "k") + F.rect(200, 6, 180, 28, "k bgF", 4) + F.rect(200, 6, 60, 28, "bS nostroke") + F.line(260, 2, 260, 38, "k thick") + F.line(260, 20, 300, 20, "k thick");
+    for (let i = 1; i < 9; i++) s += F.line(200 + i * 20, 6, 200 + i * 20, 14, "k thin");
+    s += F.text(290, 54, "gas syringe: read the volume every 10 s", "tk small bold") + F.text(90, 140, "reaction mixture", "tk small") + F.arrow(270, 70, 320, 70, "b mid", 8) + F.text(330, 74, "plunger pushed out", "tb small", "start");
+    return F.fig(480, 165, s, "<b>Volume of gas</b>: collect it in a gas syringe and record the volume at regular intervals.", { size: "small" }); })()}
+${F.row(
+  (() => { let s = F.rect(40, 130, 160, 30, "k mS", 4) + F.rect(80, 138, 80, 16, "k bgF", 2) + F.text(120, 151, "148.32 g", "tk small bold") + flask(120, 20) + F.rect(108, 10, 24, 14, "k bgF", 6) + F.text(140, 16, "cotton wool", "tk small", "start");
+    s += F.arrow(120, 6, 120, -14, "m mid", 6);
+    return F.fig(300, 175, s, "<b>Loss of mass</b>: the flask sits on a balance. As gas escapes, the mass falls. The cotton wool lets gas out but stops acid spray."); })()
+)}
+${F.row(
+  (() => { let s = F.rect(30, 30, 50, 120, "k bgF") + F.rect(31, 31, 48, 70, "gS nostroke") + F.text(55, 22, "inverted measuring cylinder", "tk small", "start") + F.rect(10, 120, 180, 50, "bS b") + flask(150, 40) + F.path("M150,40 L150,26 L120,26 L120,140 L70,140 L70,130", "k mid");
+    return F.fig(220, 180, s, "<b>Collecting over water</b>: the gas displaces water from an upturned cylinder or burette. Only for gases not very soluble in water."); })(),
+  (() => { let s = F.path("M60,30 L60,110 Q60,120 70,120 L170,120 Q180,120 180,110 L180,30", "k") + F.rect(61, 50, 118, 69, "mS nostroke") + F.rect(40, 130, 160, 30, "k bgF") + F.line(100, 135, 140, 155, "k thick") + F.line(140, 135, 100, 155, "k thick");
+    s += F.circ(120, 12, 10, "k bgF") + F.line(120, 22, 120, 34, "k d") + F.text(140, 16, "look down", "tk small", "start");
+    return F.fig(240, 175, s, "<b>Disappearing cross</b>: sodium thiosulfate + acid forms a cloudy sulfur precipitate. Time how long until the cross can't be seen. Rate ∝ 1/time."); })()
+)}
+<h3>Which method for which reaction?</h3>
+<table class="t"><tr><th>Method</th><th>Suits</th><th>Example</th></tr>
+<tr><td>Gas syringe</td><td>Any reaction producing a gas</td><td>Mg + HCl → H₂; CaCO₃ + HCl → CO₂</td></tr>
+<tr><td>Mass loss on a balance</td><td>Gas produced that is fairly dense</td><td>CaCO₃ + HCl → CO₂ (good); poor for H₂</td></tr>
+<tr><td>Collecting over water</td><td>Gas not very soluble in water</td><td>H₂, O₂ (not CO₂, NH₃, HCl)</td></tr>
+<tr><td>Disappearing cross / turbidity</td><td>A precipitate forms</td><td>Na₂S₂O₃ + HCl → S(s)</td></tr>
+<tr><td>Colour change</td><td>A coloured reactant or product</td><td>Using a colorimeter, or timing a colour change</td></tr></table>
+<h3>Planning a fair test</h3>
+<ol class="steps-inline"><li>Change <b>only one</b> independent variable (e.g. temperature).</li>
+<li>Keep the controlled variables the same: volume and concentration of acid, mass of solid, particle size, temperature (unless being tested), and the same apparatus.</li>
+<li>Start the stopwatch at the instant the reactants are mixed, and record values at regular intervals until the reaction stops.</li>
+<li>Repeat each experiment and calculate a mean. Discard anomalous results.</li>
+<li>Safety: eye protection; care with acids; no flames near hydrogen.</li></ol>
+<details class="check"><summary>Suggest two variables to control when investigating the effect of acid concentration on the rate of Mg + HCl.</summary><div>Any two of: volume of acid, mass (or length) of magnesium, surface area of magnesium (same ribbon), temperature.</div></details>`},
+
+    { h: "Evaluating methods (6.2 S)", body: C`
+<p class="lead">"Evaluate" questions want you to judge how <b>accurate</b> and <b>reliable</b> a method is, and say how to improve it.</p>
+<table class="t"><tr><th>Problem</th><th>Why it matters</th><th>Improvement</th></tr>
+<tr><td>Gas escapes before the bung is fitted</td><td>Volume measured is too low, especially at the start</td><td>Put the solid in a small tube inside the flask (or a divided flask); seal first, then tip to mix</td></tr>
+<tr><td>CO₂ collected over water</td><td>CO₂ is slightly soluble, so some dissolves and isn't measured</td><td>Use a gas syringe</td></tr>
+<tr><td>Measuring H₂ by mass loss</td><td>H₂ is so light that the mass change is tiny, so the balance can't resolve it</td><td>Use a gas syringe instead</td></tr>
+<tr><td>Disappearing cross</td><td>The end point is <b>subjective</b>: people judge "can't see it" differently</td><td>Same person every time, same cross; or use a light sensor and data logger</td></tr>
+<tr><td>Reaction time measured by hand</td><td>Reaction time of the person starting and stopping the timer</td><td>Longer reactions (so the error is smaller in proportion); data logging</td></tr>
+<tr><td>Temperature not controlled</td><td>Exothermic reactions warm up and speed up</td><td>Use a water bath; measure the temperature at the start and end</td></tr>
+<tr><td>Gas syringe sticks</td><td>Readings jump rather than rise smoothly</td><td>Check the plunger moves freely before starting</td></tr></table>
+<div class="callout tip"><b class="t">Precision vs accuracy</b>Repeating and averaging reduces <b>random</b> errors (scatter). It doesn't fix <b>systematic</b> errors (gas escaping, a balance not zeroed), which push every reading the same way. Name the type of error you're fixing.</div>`},
+
+    { h: "Interpreting rate graphs (6.2)", body: C`
 <div class="viz" data-viz="rateCurves"></div>
-<ul>
-<li>The <b>gradient is the rate</b>. It is steepest at the <b>start</b>, when the concentration of reactants is highest.</li>
-<li>The gradient <b>decreases</b> over time as reactants are used up: lower concentration means less frequent collisions.</li>
-<li>The line goes <b>horizontal</b> when the limiting reactant has run out. The reaction has stopped.</li>
-<li>A <b>faster</b> reaction has a <b>steeper</b> initial gradient and levels off <b>sooner</b>.</li>
-<li>The <b>final amount of product depends only on the amount of limiting reactant</b>, not on temperature, surface area or catalyst. Halve the limiting reactant and you halve the final plateau.</li>
-</ul>
-<p><b>Mean rate</b> over a period = change in amount ÷ time. <b>Rate at an instant</b> = gradient of the <b>tangent</b> to the curve at that time. Use a large triangle for accuracy.</p>
-<div class="callout tip"><b class="t">Sketching a new curve</b>Ask two separate questions. (1) Does the change affect the <b>rate</b>? Then make it steeper or shallower at the start. (2) Does it change the amount of the <b>limiting</b> reactant? Then change the final height. If not, keep the same final height.</div>`},
-    { h: "Collision theory (S)", body: C`
-<p>For particles to react they must:</p>
-<ol><li><b>collide</b>, and</li><li>collide with energy at least equal to the <b>activation energy</b>, $E_a$: the <b>minimum energy that colliding particles must have to react</b>.</li></ol>
-<p>Most collisions don't have enough energy, and the particles just bounce apart. So the rate depends on the <b>frequency of successful collisions</b>, which depends on:</p>
-<ul><li>the <b>number of particles per unit volume</b> (concentration or pressure)</li>
-<li>how often they collide (<b>collision frequency</b>)</li>
-<li>their <b>kinetic energy</b>: what fraction of collisions have $E\ge E_a$.</li></ul>
-<div class="callout key"><b class="t">A* phrasing</b>Always say "<b>more frequent</b> collisions" or "more collisions <b>per second</b>" (or "per unit time"), never just "more collisions". Examiners specifically refuse the second, because a reaction that runs longer also has more collisions in total.</div>`},
-    { h: "Concentration and pressure", body: C`
-<p><b>Higher concentration</b> of a solution means more reactant particles in the <b>same volume</b>. They collide <b>more frequently</b>, so there are more successful collisions per second and the rate is higher.</p>
-<p><b>Higher pressure</b> of a gas has the same effect: the same number of gas particles squeezed into a smaller volume, so more particles per unit volume and more frequent collisions.</p>
-<p>The particles' energies are <b>unchanged</b>, so the fraction of collisions that succeed is the same. There are just more collisions per second.</p>`},
-    { h: "Surface area", body: C`
-<p>Only particles on the <b>surface</b> of a solid can collide with the other reactant. Breaking a lump into a powder exposes far more particles, giving a <b>larger surface area to volume ratio</b>, so collisions are more frequent and the rate is higher.</p>
-<p>Cutting a 1 cm cube into 1 mm cubes increases the surface area 10 times with the same mass.</p>
-<p>This is why <b>fine powders can be explosive</b>: flour dust in mills, coal dust in mines, and custard powder. The huge surface area lets combustion happen almost instantly.</p>
-<p>In a graph comparison, powder gives a steeper initial curve. With the <b>same mass</b> of solid (if it's limiting), it reaches the <b>same final volume</b>.</p>`},
-    { h: "Temperature", body: C`
-<p>Raising the temperature increases rate for <b>two</b> reasons, and full marks need both:</p>
-<ol><li>Particles have more kinetic energy and <b>move faster</b>, so they collide <b>more frequently</b>.</li>
-<li>More importantly, a <b>greater proportion of collisions have energy ≥ $E_a$</b>, so a larger fraction of collisions are successful.</li></ol>
+${F.plot({ w: 480, h: 310, x: [0, 80], y: [0, 70], gridStep: [10, 10], ticks: { x: [10, 20, 30, 40, 50, 60, 70], y: [10, 20, 30, 40, 50, 60] }, xlabel: "time / s", ylabel: "volume of gas / cm³",
+  curves: [{ f: t => 60 * (1 - Math.exp(-t / 14)), c: "c thick" }, { f: t => 60 * Math.exp(-10 / 14) / 14 * (t - 10) + 60 * (1 - Math.exp(-10 / 14)), dom: [0, 26], c: "r mid" }],
+  marks: [{ x: 10, y: 60 * (1 - Math.exp(-10 / 14)), c: "r", label: "tangent at 10 s", pos: "nw" }, { x: 60, y: 59.6, c: "k", label: "reaction finished", pos: "s" }],
+  extra: (X, Y) => F.line(X(0), Y(60), X(80), Y(60), "m d thin") + F.text(X(80), Y(60) - 6, "final volume set by limiting reactant", "tm small", "end"),
+  cap: "Volume of gas against time. The gradient (steepness) is the rate: steepest at the start, decreasing, then zero when the reaction stops." })}
+<ul><li>The <b>gradient</b> of the curve is the <b>rate</b>. It is <b>steepest at the start</b>, because the reactants are most concentrated, so collisions are most frequent.</li>
+<li>The gradient <b>decreases</b> as reactants are used up: lower concentration means less frequent collisions.</li>
+<li>When the line goes <b>horizontal</b> (gradient zero) the reaction has <b>stopped</b>: the limiting reactant is used up.</li>
+<li>The <b>final height</b> depends only on the <b>amount of the limiting reactant</b>.</li></ul>
+<h3>Calculating rates</h3>
+<p><b>Mean rate</b> over a time interval $=\dfrac{\text{change in volume}}{\text{time}}$. From the graph: in the first 20 s, $\dfrac{45}{20}\approx2.3$ cm³/s; from 20 s to 40 s, $\dfrac{56-45}{20}\approx0.5$ cm³/s. The rate is falling.</p>
+<p><b>Rate at an instant</b> = <b>gradient of the tangent</b> at that time. Draw a straight line that just touches the curve at that point, make a large triangle on it, and calculate rise ÷ run (with units).</p>
+<h3>Comparing curves</h3>
+${F.plot({ w: 480, h: 290, x: [0, 80], y: [0, 70], gridStep: [10, 10], ticks: { x: [20, 40, 60], y: [20, 40, 60] }, xlabel: "time", ylabel: "volume of gas",
+  curves: [{ f: t => 60 * (1 - Math.exp(-t / 14)), c: "k thick", label: "original", lpos: [72, 60], ldx: -60, ldy: -8 }, { f: t => 60 * (1 - Math.exp(-t / 5)), c: "g thick", label: "faster (same amount)", lpos: [24, 59.5], ldx: 4, ldy: -8 }, { f: t => 30 * (1 - Math.exp(-t / 14)), c: "o thick d", label: "half the limiting reactant", lpos: [70, 29.9], ldx: -10, ldy: -8, la: "end" }, { f: t => 60 * (1 - Math.exp(-t / 30)), c: "b thick", label: "slower (same amount)", lpos: [70, 54], ldx: -10, ldy: 16, la: "end" }],
+  cap: "Faster (hotter, more concentrated acid in excess, powder, catalyst): steeper start, levels off sooner at the <b>same</b> height. Less limiting reactant: <b>lower</b> final height." })}
+<div class="callout tip"><b class="t">Two questions for every new curve</b>(1) Does the change affect the <b>rate</b>? Then make the start steeper or shallower. (2) Does it change the amount of the <b>limiting reactant</b>? Then change the final height. If not, keep the same final height.</div>
+<p>On a <b>mass-loss</b> graph, the mass <b>decreases</b> and levels off, so the curve is upside-down, but the same rules apply.</p>
+<details class="check"><summary>Magnesium (limiting) reacts with excess acid. The acid concentration is doubled. Describe the new curve.</summary><div>Steeper initial gradient (more frequent collisions), levels off sooner, at the same final volume (the same amount of magnesium).</div></details>`},
+
+    { h: "Collision theory (6.2 S)", body: C`
+<p class="lead">For a reaction to happen, particles must <b>collide</b>, and the collision must have <b>enough energy</b>. Most collisions don't: the particles just bounce apart unchanged.</p>
+${F.row(
+  (() => { let s = F.circ(70, 70, 18, "o oS") + F.circ(150, 70, 18, "b bS") + F.arrow(95, 70, 115, 70, "k mid", 7) + F.arrow(125, 70, 105, 70, "k mid", 7) + F.text(110, 120, "low energy: bounce apart", "tk small bold") + F.arrow(60, 100, 30, 110, "m mid", 7) + F.arrow(160, 100, 190, 110, "m mid", 7); return F.fig(230, 140, s, "Unsuccessful collision: energy below $E_a$."); })(),
+  (() => { let s = F.circ(60, 70, 18, "o oS") + F.circ(160, 70, 18, "b bS") + F.arrow(84, 70, 124, 70, "r thick", 9) + F.arrow(136, 70, 96, 70, "r thick", 9); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; s += F.line(110 + 10 * Math.cos(a), 70 + 10 * Math.sin(a), 110 + 20 * Math.cos(a), 70 + 20 * Math.sin(a), "r mid"); } s += F.text(110, 120, "energy ≥ Ea: reaction!", "tr small bold"); return F.fig(230, 140, s, "Successful collision: energy at least $E_a$."); })()
+)}
+<p>The <b>activation energy</b>, $E_a$, is the <b>minimum energy that colliding particles must have in order to react</b>. It's the energy needed to start breaking the bonds in the reactants.</p>
+${profile({ curves: [{ f: path(4.7), dom: [0.5, 9.5], c: "k thick" }],
+  extra: (X, Y) => F.text(X(1.5), Y(6) - 8, "reactants", "tk small bold") + F.text(X(8.8), Y(3) - 8, "products", "tk small bold") + F.dim(X(2.2), Y(6), X(2.2), Y(9.2), "Eₐ", "r", -18) + F.line(X(2), Y(9.2), X(5), Y(9.2), "m d thin") + F.dim(X(9.8), Y(6), X(9.8), Y(3), "ΔH", "b", 18) + F.line(X(2), Y(6), X(9.9), Y(6), "m d thin"),
+  cap: "Reaction pathway diagram for an exothermic reaction. $E_a$ is the energy 'hill' from the reactants up to the peak." })}
+<p>So the <b>rate depends on the frequency of successful collisions</b> (successful collisions per second), which depends on:</p>
+<ol><li>the <b>number of particles per unit volume</b> (concentration of a solution, or pressure of a gas);</li>
+<li>the <b>collision frequency</b>: how often particles collide (more particles in the space, or faster-moving particles, means more collisions per second);</li>
+<li>the <b>kinetic energy</b> of the particles: what proportion of collisions have energy ≥ $E_a$.</li></ol>
+<div class="callout key"><b class="t">A* phrasing: always use "frequency"</b>Write "<b>more frequent</b> collisions" or "more collisions <b>per second</b>" (or per unit time). Never just "more collisions". A slow reaction that runs for longer also has more collisions in total, so examiners don't accept it.</div>
+<details class="check"><summary>Define activation energy.</summary><div>The minimum energy that colliding particles must have in order to react.</div></details>`},
+
+    { h: "Concentration and pressure (6.2)", body: C`
+${F.row(box(scatter(10, 1), "Low concentration: few particles per unit volume."), box(scatter(28, 7), "High concentration: more particles in the same volume, so more frequent collisions."))}
+<p><b>Increasing the concentration</b> of a solution (more moles of reactant per dm³) puts more reactant particles in the same volume. The particles are closer together, so they collide <b>more frequently</b>. More collisions per second means more <b>successful</b> collisions per second, so the rate increases.</p>
+${F.row(
+  (() => { let s = F.rect(20, 30, 180, 110, "k bgF") + F.rect(170, 26, 12, 118, "k mS") + F.arrow(240, 85, 190, 85, "k thick", 10) + scatterIn(10, 3, 22, 32, 146, 106); return F.fig(260, 160, s, "Gas at low pressure."); })(),
+  (() => { let s = F.rect(20, 30, 100, 110, "k bgF") + F.rect(110, 26, 12, 118, "k mS") + F.arrow(190, 85, 130, 85, "r thick", 10) + scatterIn(10, 3, 22, 32, 86, 106); return F.fig(220, 160, s, "Compressed: the same particles in a smaller volume, so more frequent collisions."); })()
+)}
+<p><b>Increasing the pressure</b> of a gas squeezes the same number of particles into a smaller volume (or adds more particles to the same volume). It has exactly the same effect as increasing concentration: more particles per unit volume, more frequent collisions, faster rate.</p>
+<p>Note what <b>doesn't</b> change: the particles' energies. The <b>proportion</b> of collisions that are successful is the same; there are simply more collisions per second.</p>
+<div class="callout exam"><b class="t">Examiner wording (3 marks)</b>"Higher concentration means <b>more particles per unit volume</b>, so the particles collide <b>more frequently</b>, so there are more <b>successful collisions per second</b>."</div>`},
+
+    { h: "Surface area (6.2)", body: C`
+${(() => { let s = F.rect(30, 50, 100, 100, "k oS") + F.text(80, 172, "1 cube, 2 cm side", "tk small") + F.text(80, 190, "surface area = 24 cm²", "tk small bold");
+  s += F.arrow(150, 100, 200, 100, "k mid", 9) + F.text(175, 90, "cut", "tk small");
+  [[220, 50], [272, 50], [220, 102], [272, 102]].forEach(([x, y]) => s += F.rect(x, y, 46, 46, "k oS")); s += F.text(270, 172, "8 cubes, 1 cm side", "tk small") + F.text(270, 190, "surface area = 48 cm²", "tk small bold");
+  s += F.arrow(340, 100, 390, 100, "k mid", 9); for (let i = 0; i < 40; i++) { const r = (k) => Math.abs((Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1); s += F.rect(400 + r(1) * 100, 50 + r(2) * 100, 6, 6, "oF"); } s += F.text(450, 172, "powder", "tk small") + F.text(450, 190, "huge surface area", "tk small bold");
+  return F.fig(530, 205, s, "Same mass, but cutting it up exposes far more surface. Halving the side length doubles the total surface area.", { size: "wide" }); })()}
+<p class="lead">A solid can only react at its <b>surface</b>, where its particles are exposed to the other reactant. Particles inside a lump can't collide with anything until the outer layers have reacted away.</p>
+<p>Breaking a solid into smaller pieces (chips → granules → powder) gives a larger <b>surface area to volume ratio</b>. More particles are exposed, so collisions are <b>more frequent</b> and the rate is higher. The total mass, and so the final amount of product, stays the same.</p>
+<ul><li>Powdered calcium carbonate reacts with acid much faster than marble chips.</li>
+<li>Kindling catches fire before logs; potatoes cut small cook faster.</li>
+<li><b>Dust explosions</b>: fine combustible powders (flour in mills, coal dust in mines, custard powder, sawdust) have enormous surface areas. A spark can make them burn almost instantly, releasing heat and gas so fast that it explodes. Mills control dust and ban naked flames for this reason.</li></ul>
+<details class="check"><summary>Explain why powdered magnesium reacts faster with acid than magnesium ribbon of the same mass.</summary><div>Powder has a larger surface area, so more Mg particles are exposed to the acid, giving more frequent collisions and more successful collisions per second.</div></details>`},
+
+    { h: "Temperature (6.2)", body: C`
+<p class="lead">Raising the temperature increases the rate for <b>two</b> reasons, and full marks need both.</p>
+<ol><li>Particles gain <b>kinetic energy</b> and <b>move faster</b>, so they collide <b>more frequently</b>.</li>
+<li>More importantly, a <b>greater proportion of the collisions have energy ≥ the activation energy</b>, so a larger fraction of collisions are successful.</li></ol>
 <div class="viz" data-viz="energyDist"></div>
-<p>The second effect is much larger, which is why a rise of just 10 °C can roughly <b>double</b> the rate even though the particles are only a few percent faster.</p>
-<p>Use the particle simulator below: raise the temperature and watch the successful collisions (flashes) increase.</p>`},
-    { h: "Catalysts and enzymes", body: C`
-<p>A <b>catalyst</b> is a substance that <b>increases the rate</b> of a reaction and is <b>chemically unchanged</b> (not used up) at the end. Only small amounts are needed, and it doesn't appear in the overall equation. It doesn't change the amount of product.</p>
-<p>(S) <b>How:</b> it provides an <b>alternative reaction pathway with a lower activation energy</b>. At the same temperature, a <b>greater proportion of collisions</b> now have energy ≥ the new, lower $E_a$, so more collisions are successful.</p>
-<p><b>Reaction pathway diagram:</b> energy on the y-axis and progress of reaction on the x-axis. The reactant and product levels are unchanged by a catalyst, but the "hump" ($E_a$, measured from the reactants up to the peak) is <b>lower</b> with a catalyst. Draw it as a second, lower curve between the same start and end levels.</p>
-<p>Industrial examples: iron in the Haber process; vanadium(V) oxide in the Contact process.</p>
+${F.plot({ w: 480, h: 300, x: [0, 10], y: [0, 1.1], grid: false, xlabel: "kinetic energy", ylabel: "number of particles", m: { l: 26, r: 20, t: 16, b: 26 },
+  curves: [{ f: E => Math.E * E / 1.6 * Math.exp(-E / 1.6) / 1, c: "b thick", label: "lower T", lpos: [1.6, 1], ldx: 6, ldy: -4 }, { f: E => Math.E * E / 2.6 * Math.exp(-E / 2.6) * 1.6 / 2.6, c: "r thick", label: "higher T", lpos: [4.4, 0.55], ldx: 8, ldy: -8 }],
+  extra: (X, Y) => { let s = F.line(X(6.5), Y(0), X(6.5), Y(1), "k mid") + F.text(X(6.5) + 6, Y(.95), "Eₐ", "tk bold", "start"); const pts = [[X(6.5), Y(0)]]; for (let E = 6.5; E <= 10; E += .1) pts.push([X(E), Y(Math.E * E / 2.6 * Math.exp(-E / 2.6) * 1.6 / 2.6)]); pts.push([X(10), Y(0)]); return s + F.poly(pts, "r rS nostroke", true); },
+  cap: "Energy distribution of particles. At a higher temperature the curve flattens and shifts right; the shaded area (particles with energy ≥ $E_a$) gets much bigger." })}
+<p>The second effect dominates. A 10 °C rise makes the particles only a few percent faster, but it can roughly <b>double</b> the number of particles with enough energy to react, so the rate can roughly double.</p>
+<p>Conversely, <b>cooling slows reactions</b>: that's why fridges keep food fresh (slower decay and microbe growth).</p>
+<div class="callout exam"><b class="t">Examiner wording (3 marks)</b>"Particles have more kinetic energy / move faster, so <b>collide more frequently</b>; and a <b>greater proportion of collisions</b> have energy <b>≥ the activation energy</b>, so there are more successful collisions per second."</div>
+<p>Try the particle simulator at the end of this lesson: raise the temperature and watch the number of successful collisions (flashes) climb.</p>`},
+
+    { h: "Catalysts and enzymes (6.2)", body: C`
+<p class="lead">A <b>catalyst</b> is a substance that <b>increases the rate</b> of a reaction and is <b>chemically unchanged</b> (not used up) at the end of the reaction.</p>
+<ul><li>Only small amounts are needed, because it's regenerated and used again and again.</li><li>It does <b>not</b> appear in the overall equation (you may write it over the arrow).</li>
+<li>It does <b>not</b> change the amount of product. You get the same yield, sooner.</li><li>Catalysts are specific: each works for particular reactions.</li></ul>
+<h3>How a catalyst works (S)</h3>
+${profile({ curves: [{ f: path(4.7), dom: [0.5, 9.5], c: "k thick", label: "uncatalysed", lpos: [5.3, 9.1], ldx: 10, ldy: -4 }, { f: path(2.9), dom: [0.5, 9.5], c: "g thick", label: "catalysed", lpos: [5.8, 6.6], ldx: 14, ldy: 4 }],
+  extra: (X, Y) => F.text(X(1.5), Y(6) - 8, "reactants", "tk small bold") + F.text(X(8.8), Y(3) - 8, "products", "tk small bold") + F.dim(X(3.4), Y(6), X(3.4), Y(9.2), "Eₐ", "k", -18) + F.dim(X(4.4), Y(6), X(4.4), Y(7.4), "Eₐ (cat)", "g", 30) + F.line(X(3.2), Y(9.2), X(5), Y(9.2), "m d thin") + F.line(X(4.2), Y(7.4), X(5), Y(7.4), "m d thin"),
+  cap: "A catalyst provides an alternative pathway with a <b>lower activation energy</b>. The reactant and product energies, and so ΔH, are unchanged." })}
+<p>A catalyst provides an <b>alternative reaction pathway with a lower activation energy</b>. At the same temperature, a <b>greater proportion of collisions</b> now have energy ≥ the new, lower $E_a$, so more collisions per second are successful. Notice what it does <b>not</b> do: it doesn't give particles more energy, and it doesn't change the energy of the reactants or products.</p>
+<p><b>Drawing the diagram:</b> keep the same reactant and product levels, and draw a second, <b>lower hump</b> between them. Label both $E_a$ values from the reactant level up to each peak.</p>
+<table class="t"><tr><th>Industrial process</th><th>Catalyst</th></tr><tr><td>Haber process (ammonia)</td><td>Iron</td></tr><tr><td>Contact process (sulfuric acid)</td><td>Vanadium(V) oxide, V₂O₅</td></tr><tr><td>Decomposition of hydrogen peroxide</td><td>Manganese(IV) oxide, MnO₂</td></tr><tr><td>Car exhausts (catalytic converter)</td><td>Platinum, rhodium, palladium</td></tr></table>
+<p>Catalysts save energy and money: reactions can run at lower temperatures, which reduces fuel use and carbon dioxide emissions.</p>
 <h3>Enzymes</h3>
-<p><b>Enzymes</b> are proteins that act as <b>biological catalysts</b>. They work best at an <b>optimum temperature</b> (often around 37 °C) and optimum pH. Above the optimum, the enzyme is <b>denatured</b>: its shape (active site) is permanently changed, so it stops working and the rate falls. That's why the rate curve rises and then drops sharply.</p>
-<div class="callout warn"><b class="t">Wrong ideas</b>"A catalyst gives particles more energy." It doesn't; it lowers the energy needed. "A catalyst makes more product." It doesn't; it gives the same amount, faster.</div>`}
+${F.plot({ w: 460, h: 260, x: [0, 70], y: [0, 10], grid: false, ticks: { x: [10, 20, 30, 40, 50, 60] }, xlabel: "temperature / °C", ylabel: "rate", m: { l: 26, r: 20, t: 16, b: 30 },
+  curves: [{ f: T => T < 40 ? 9 * Math.exp((T - 40) / 14) : Math.max(0, 9 - (T - 40) ** 2 / 14), dom: [0, 52], c: "g thick" }],
+  marks: [{ x: 40, y: 9, c: "r", label: "optimum ≈ 37–40 °C", pos: "ne" }],
+  extra: (X, Y) => F.text(X(2), Y(8), "rising: more frequent,", "tk small", "start") + F.text(X(2), Y(7.2), "more energetic collisions", "tk small", "start") + F.text(X(55), Y(4.6), "enzyme denatured", "tr small bold", "start"),
+  cap: "Rate of an enzyme-catalysed reaction against temperature: it rises to an optimum, then falls sharply as the enzyme is denatured." })}
+<p><b>Enzymes</b> are proteins that act as <b>biological catalysts</b>. They speed up the reactions in living things (digestion, respiration) and are used in industry (biological washing powders, brewing, food production).</p>
+<ul><li>Each enzyme has an <b>optimum temperature</b> (about 37 °C for human enzymes) and an <b>optimum pH</b>.</li>
+<li>Below the optimum, raising the temperature speeds the reaction up as normal.</li>
+<li>Above the optimum, the enzyme is <b>denatured</b>: its shape, including the <b>active site</b> where the reactant fits, is permanently changed. It stops working and the rate falls rapidly. Extremes of pH also denature enzymes.</li></ul>
+<div class="callout warn"><b class="t">Wrong ideas that lose marks</b>"A catalyst gives the particles more energy." "A catalyst increases the yield." "The catalyst is used up." "Enzymes are killed." (They're not alive, so they're <b>denatured</b>.)</div>
+<details class="check"><summary>Explain, using activation energy, how a catalyst increases the rate.</summary><div>It provides an alternative pathway with a lower activation energy, so a greater proportion of collisions have energy ≥ Ea, giving more successful collisions per second.</div></details>`}
   ],
   worked: [
     { q: C`Marble chips react with excess HCl. Sketch how the gas-volume curve changes if the same mass of powdered marble is used.`,
