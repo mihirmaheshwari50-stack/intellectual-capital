@@ -35,7 +35,7 @@ window.DEMOS = (() => {
     id = requestAnimationFrame(step);
     return () => { alive = false; cancelAnimationFrame(id); };
   }
-  const typeset = (el) => window.renderMathInElement && renderMathInElement(el, { delimiters: [{ left: "$", right: "$", display: false }] });
+  const typeset = (el) => window.renderMathInElement && renderMathInElement(el, { delimiters: [{ left: "$", right: "$", display: false }], ignoredClasses: ["nomath"] });
   const fix = (n, d = 2) => (Math.abs(n) < 1e-9 ? 0 : n).toFixed(d);
 
   // shared axis grid

@@ -24,7 +24,7 @@
   // ---------- helpers ----------
   const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
   const math = (node) => window.renderMathInElement && renderMathInElement(node, {
-    delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }], throwOnError: false
+    delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }], ignoredClasses: ["nomath"], throwOnError: false
   });
   const topic = (id) => TOPICS.find(t => t.id === id);
   const subjColor = (s) => SUBJECTS[s].color;
