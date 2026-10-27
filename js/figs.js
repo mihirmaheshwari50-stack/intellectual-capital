@@ -91,14 +91,15 @@ window.FIG = (() => {
       case "thermistor": g = rect(x - 20, y - 8, 40, 16, "bgF k") + poly([[x - 26, y + 14], [x - 18, y + 14], [x + 18, y - 14]], "k thin"); break;
       case "ldr": g = circ(x, y, 22, "bgF k") + rect(x - 14, y - 6, 28, 12, "bgF k") + arrow(x - 26, y - 30, x - 12, y - 14, "k thin", 6) + arrow(x - 14, y - 34, x, y - 18, "k thin", 6); break;
       case "lamp": g = circ(x, y, 12, "bgF k") + line(x - 8.5, y - 8.5, x + 8.5, y + 8.5, "k") + line(x - 8.5, y + 8.5, x + 8.5, y - 8.5, "k"); break;
-      case "ammeter": case "voltmeter": case "motor": g = circ(x, y, 13, "bgF k") + text(x, y + 5, type === "ammeter" ? "A" : type === "voltmeter" ? "V" : "M", "tk bold"); break;
+      case "ammeter": case "voltmeter": case "motor": g = circ(x, y, 13, "bgF k"); break;
       case "switch": g = rect(x - 16, y - 4, 32, 8, "bgF nostroke") + circ(x - 14, y, 2.5, "kF") + circ(x + 14, y, 2.5, "kF") + line(x - 14, y, x + 12, y - (o.closed ? 1 : 12), "k"); break;
       case "fuse": g = rect(x - 16, y - 6, 32, 12, "bgF k") + line(x - 22, y, x + 22, y, "k"); break;
       case "diode": case "led": g = rect(x - 12, y - 12, 24, 24, "bgF nostroke") + poly([[x - 9, y - 10], [x - 9, y + 10], [x + 8, y]], "bgF k", true) + line(x + 8, y - 10, x + 8, y + 10, "k") + line(x - 12, y, x + 12, y, "k") + (type === "led" ? arrow(x + 2, y - 12, x + 12, y - 24, "k thin", 6) + arrow(x + 9, y - 10, x + 19, y - 22, "k thin", 6) : ""); break;
       case "heater": g = rect(x - 20, y - 8, 40, 16, "bgF k") + [-12, -4, 4, 12].map(d => line(x + d, y - 8, x + d, y + 8, "k thin")).join(""); break;
     }
     const lab = o.label ? text(v ? x + (o.lx ?? 30) : x + (o.lx ?? 0), v ? y + 4 + (o.ly ?? 0) : y + (o.ly ?? -18), o.label, "tk small", v ? "start" : "middle") : "";
-    return `<g${rot}>${g}</g>` + lab;
+    const letter = { ammeter: "A", voltmeter: "V", motor: "M" }[type];
+    return `<g${rot}>${g}</g>` + (letter ? text(x, y + 5, letter, "tk bold") : "") + lab;
   }
 
   // ---------- chemistry: atoms with shells, dot-and-cross ----------

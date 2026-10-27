@@ -1,6 +1,12 @@
 window.TOPICS = window.TOPICS || [];
 {
 const P = String.raw, F = FIG;
+//@@HELPERS-START
+// ---- diagram helpers for this topic ----
+const loop = (x0, y0, x1, y1) => F.wire([[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]);
+const sym = (type, name, o = {}) => { const s = F.wire([[16, 50], [124, 50]]) + F.comp(type, 70, 50, o) + F.text(70, 104, name, "tk small bold"); return F.fig(140, 116, s, "", { size: "tiny" }); };
+const iv = (f, title, note, c) => F.plot({ w: 260, h: 230, x: [-6, 6], y: [-1.6, 1.6], grid: false, xlabel: "V", ylabel: "I", m: { l: 16, r: 18, t: 16, b: 18 }, curves: [{ f, c: c + " thick" }], cap: `<b>${title}</b>: ${note}` });
+//@@HELPERS-END
 
 /* ============================================================
    ELECTRICITY  (0625: 4.2.1–4.2.5, 4.3.1–4.3.3, 4.4)
@@ -10,107 +16,224 @@ TOPICS.push({
   blurb: "Charge, fields, current, e.m.f., p.d., resistance, I–V graphs, series and parallel, potential dividers, power and safety.",
   level: "Core → Supplement", demo: "circuit",
   syllabus: [
-    ["4.2.1", "Positive and negative charges; like charges repel, unlike attract; charging by friction", 0],
-    ["4.2.1 S", "Charging explained by electron transfer; electric fields and their field patterns", 0],
+    ["4.2.1", "Positive and negative charges; like charges repel and unlike attract; charging by friction", 0],
+    ["4.2.1 S", "Explain charging by friction in terms of electron transfer; simple tests for charge", 0],
     ["4.2.1", "Conductors and insulators (S: explained by free electrons); charge measured in coulombs", 0],
-    ["4.2.2", "Current as a rate of flow of charge, $I=Q/t$; using ammeters; conventional current vs electron flow", 1],
-    ["4.2.2 S", "Direct current (d.c.) and alternating current (a.c.)", 1],
-    ["4.2.3", "Electromotive force and potential difference as work done per unit charge; using voltmeters", 2],
-    ["4.2.4", "Resistance $R=V/I$; the experiment; I–V graphs; $R\\propto L$ and $R\\propto 1/A$", 3],
-    ["4.2.5", "Electrical power $P=IV$ and energy $E=IVt$; the kilowatt-hour and cost", 4],
-    ["4.3.1", "Draw and interpret circuit diagrams with standard symbols", 5],
-    ["4.3.2", "Current, p.d. and resistance in series and parallel circuits (S: calculations, conservation of charge)", 6],
-    ["4.3.3", "Action of thermistors, LDRs, diodes and LEDs; potential dividers (S: $V_1/V_2=R_1/R_2$)", 7],
-    ["4.4", "Electrical safety: hazards, live/neutral/earth, fuses, circuit breakers, earthing, double insulation", 8]
+    ["4.2.1 S", "Electric fields: direction and field patterns (point charge, charged sphere, parallel plates)", 1],
+    ["4.2.2", "Current as a rate of flow of charge, $I=Q/t$; using ammeters; conventional current vs electron flow", 2],
+    ["4.2.2 S", "Direct current (d.c.) and alternating current (a.c.)", 2],
+    ["4.2.3", "E.m.f. and p.d. as work done per unit charge; using voltmeters (S: $E=W/Q$, $V=W/Q$)", 3],
+    ["4.2.4", "Resistance $R=V/I$ and the experiment to determine it; I–V graphs (S: $R\\propto L$, $R\\propto1/A$)", 4],
+    ["4.2.5", "Electrical power $P=IV$ and energy $E=IVt$; the kilowatt-hour; cost of electricity", 5],
+    ["4.3.1", "Draw and interpret circuit diagrams using standard symbols", 6],
+    ["4.3.2", "Series and parallel circuits: current, p.d. and resistance (S: calculations, conservation of charge)", 7],
+    ["4.3.3", "Action of thermistors, LDRs, diodes and LEDs; potential dividers (S: $V_1/V_2=R_1/R_2$)", 8],
+    ["4.4", "Electrical safety: hazards; live, neutral, earth; fuses and trip switches; earthing; double insulation", 9]
   ],
   sections: [
-    { h: "Electric charge and electric fields", body: P`
-<p>There are two kinds of charge: <b>positive</b> and <b>negative</b>. <b>Like charges repel</b> and <b>unlike charges attract</b>. Charge is measured in <b>coulombs (C)</b>. One electron carries $-1.6\times10^{-19}$ C.</p>
-<h3>Charging by friction</h3>
-<p>Rubbing a polythene rod with a cloth transfers <b>electrons</b> from the cloth to the rod. The rod gains electrons and becomes <b>negative</b>, and the cloth loses electrons and is left <b>positive</b> by an equal amount. With an acetate rod, electrons move the other way.</p>
-<div class="callout key"><b class="t">Only electrons move</b>Positive charges (protons) are locked in nuclei and never move in charging. "The rod gains positive charge" earns no marks. Write "the rod <b>loses electrons</b>".</div>
-<p><b>Simple test:</b> hang a charged rod so it can rotate and bring another charged rod near it. Repulsion means like charges. Charged objects also attract small uncharged pieces of paper.</p>
+    { h: "Electric charge (4.2.1)", body: P`
+<p class="lead">Everything is made of atoms, and atoms contain charged particles: <b>protons</b> (+) locked in the nucleus and <b>electrons</b> (−) on the outside. Normally they balance, so objects are <b>neutral</b>. An object becomes <b>charged</b> when it gains or loses electrons.</p>
+<ul><li>There are two kinds of charge: <b>positive</b> and <b>negative</b>.</li>
+<li><b>Like charges repel</b>, and <b>unlike charges attract</b>.</li>
+<li>Charge is measured in <b>coulombs (C)</b>. One electron carries $-1.6\times10^{-19}$ C, so it takes about $6\times10^{18}$ electrons to make one coulomb.</li></ul>
+<h3>Charging by friction (S: electron transfer)</h3>
+${(() => { let s = F.rect(40, 70, 220, 26, "k mS", 13) + F.text(150, 88, "polythene rod", "tk small bold") + F.path("M150,60 C190,40 250,50 270,80 C280,100 240,120 200,112", "o thick") + F.text(276, 62, "cloth", "to bold small", "start");
+  for (let i = 0; i < 6; i++) s += F.text(60 + i * 34, 64, "−", "tb bold big");
+  s += F.arrow(240, 104, 200, 100, "b mid", 8) + F.text(246, 132, "electrons move cloth → rod", "tb small bold", "start");
+  s += F.rect(40, 170, 220, 26, "k bS", 13) + F.text(150, 188, "rod: gained electrons → NEGATIVE", "tb small bold") + F.rect(290, 165, 120, 36, "k oS", 8) + F.text(350, 188, "cloth: POSITIVE", "to small bold");
+  return F.fig(440, 220, s, "Rubbing transfers electrons. The rod ends up with extra electrons (negative) and the cloth with a shortage (positive), equal and opposite.", { size: "small" }); })()}
+<p>When two insulators are rubbed together, friction transfers <b>electrons</b> from one surface to the other. Which way they go depends on the materials:</p>
+<ul><li><b>Polythene</b> rubbed with a cloth <b>gains</b> electrons and becomes <b>negative</b>; the cloth is left <b>positive</b>.</li>
+<li><b>Acetate</b> (perspex) rubbed with a cloth <b>loses</b> electrons and becomes <b>positive</b>; the cloth becomes negative.</li></ul>
+<div class="callout key"><b class="t">Only electrons move</b>Protons are held in nuclei and never move during charging. A positive object has <b>lost electrons</b>; it has not "gained positive charge". This is the point most often penalised.</div>
+<h3>Testing for charge</h3>
+<p>Hang a charged rod in a stirrup on a thread so it can rotate freely. Bring another charged rod near it. If it swings <b>away</b>, they have the <b>same</b> type of charge. Attraction alone doesn't prove the charges are opposite, because a charged rod also attracts <i>uncharged</i> objects. <b>Repulsion is the only sure test.</b></p>
+<p>A charged rod picks up small pieces of paper. Its charge pushes or pulls the electrons in the paper, so the near side of the paper becomes oppositely charged and is attracted.</p>
 <h3>Conductors and insulators</h3>
-<p><b>Conductors</b> (metals, graphite) contain <b>free (delocalised) electrons</b> that can move through the material, so charge flows. <b>Insulators</b> (plastic, rubber, glass, dry wood) have electrons held tightly in atoms, so charge stays where it is put. That's why only insulators can be charged by rubbing while held in your hand.</p>
-<h3>Electric fields (S)</h3>
-<p>An <b>electric field</b> is a region in which an electric charge experiences a force. The <b>direction</b> of the field at a point is the direction of the force on a <b>positive</b> charge placed there: away from positive charges and towards negative charges.</p>
-<ul><li><b>Point charge or charged sphere:</b> radial straight lines, outward for +, inward for −. The lines are closer near the charge, where the field is stronger.</li>
-<li><b>Between two oppositely charged parallel plates:</b> evenly spaced parallel lines from + to −, a <b>uniform</b> field.</li></ul>
-<div class="viz" data-viz="efield"></div>`},
-    { h: "Current", body: P`
-<p><b>Electric current</b> is the rate of flow of charge:</p>
-$$I=\frac{Q}{t}\qquad1\text{ A}=1\text{ C/s}$$
-<p>In metals the charge carriers are <b>electrons</b>, which drift from the <b>negative</b> terminal round to the <b>positive</b>. Before electrons were discovered, current was defined as flowing from + to −. This <b>conventional current</b> is still what arrows on circuit diagrams show.</p>
-<p>Current is measured with an <b>ammeter</b> connected in <b>series</b> (it must be in the path the charge flows through). An ideal ammeter has almost zero resistance, so it doesn't change the current it measures.</p>
+<table class="t"><tr><th></th><th>Conductors</th><th>Insulators</th></tr>
+<tr><td>Examples</td><td>Metals (copper, aluminium), graphite</td><td>Plastics, rubber, glass, dry wood, air</td></tr>
+<tr><td>Why (S)</td><td>Contain <b>free (delocalised) electrons</b> that can move through the material</td><td>Electrons are held tightly in their atoms and can't move freely</td></tr>
+<tr><td>Charging</td><td>Charge flows away (e.g. through your hand), unless the conductor is insulated</td><td>Charge stays where it's put, so they can be charged by rubbing</td></tr></table>
+<details class="check"><summary>A balloon rubbed on hair sticks to the wall. Explain using electrons.</summary><div>Electrons transfer from hair to balloon, making it negative. Near the balloon, electrons in the wall are repelled away, leaving the wall's surface slightly positive. Unlike charges attract, so the balloon sticks.</div></details>`},
+
+    { h: "Electric fields (4.2.1 S)", body: P`
+<p class="lead">An <b>electric field</b> is a region in which an electric charge experiences a force. Every charged object is surrounded by one.</p>
+<p>The <b>direction</b> of an electric field at a point is the direction of the force on a <b>positive</b> charge placed there. So field lines point <b>away from positive</b> charges and <b>towards negative</b> charges. Lines that are closer together mean a stronger field.</p>
+<div class="viz" data-viz="efield"></div>
+${F.row(
+  (() => { let s = ""; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; s += F.arrow(110 + 24 * Math.cos(a), 110 + 24 * Math.sin(a), 110 + 92 * Math.cos(a), 110 + 92 * Math.sin(a), "k mid", 8); } s += F.circ(110, 110, 18, "o oS") + F.text(110, 116, "+", "to bold big"); return F.fig(220, 220, s, "Positive point charge (or charged sphere): radial, outwards."); })(),
+  (() => { let s = ""; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; s += F.arrow(110 + 92 * Math.cos(a), 110 + 92 * Math.sin(a), 110 + 24 * Math.cos(a), 110 + 24 * Math.sin(a), "k mid", 8); } s += F.circ(110, 110, 18, "b bS") + F.text(110, 116, "−", "tb bold big"); return F.fig(220, 220, s, "Negative point charge: radial, inwards."); })(),
+  (() => { let s = F.rect(20, 30, 200, 10, "oF") + F.rect(20, 180, 200, 10, "bF") + F.text(120, 22, "+ + + + + + +", "to bold") + F.text(120, 210, "− − − − − − −", "tb bold"); for (let k = 0; k <= 7; k++) s += F.arrow(32 + k * 25, 42, 32 + k * 25, 178, "k mid", 8); return F.fig(240, 220, s, "Oppositely charged parallel plates: <b>uniform</b> field (equally spaced parallel lines)."); })()
+)}
+<ul><li><b>Point charge</b> or <b>charged conducting sphere</b>: <b>radial</b> straight lines spreading from the centre, outward for +, inward for −. The field gets weaker with distance as the lines spread apart.</li>
+<li><b>Between two oppositely charged parallel plates</b>: <b>straight, parallel, equally spaced</b> lines from the + plate to the − plate, at right angles to the plates. The field is <b>uniform</b> (the same strength everywhere between them, except near the edges).</li></ul>
+<div class="callout exam"><b class="t">Drawing field diagrams</b>Lines must touch the charged surface at 90°, never cross, and carry arrows. For plates: at least 4 or 5 evenly spaced lines, all arrowed from + to −.</div>
+<details class="check"><summary>Which way would an electron move between the plates above?</summary><div>Upwards, towards the positive plate: opposite to the field direction, because the electron is negative.</div></details>`},
+
+    { h: "Electric current (4.2.2)", body: P`
+<p class="lead"><b>Current</b> is the rate of flow of charge, measured in amperes (A). One amp is one coulomb passing a point every second.</p>
+$$I=\frac{Q}{t}\qquad Q=It$$
+<p>In a metal wire, the moving charges are the free <b>electrons</b>. They drift from the <b>negative</b> terminal, round the circuit, to the <b>positive</b> terminal. Before electrons were discovered, scientists had chosen to say current flows from + to −. This <b>conventional current</b> is still the direction shown by arrows on circuit diagrams.</p>
+${(() => { let s = loop(60, 50, 380, 190) + F.comp("cell", 60, 120, { v: true }) + F.comp("lamp", 220, 50) + F.text(36, 104, "+", "tk bold") + F.text(36, 146, "−", "tk bold");
+  s += F.arrow(110, 34, 170, 34, "r thick", 10) + F.text(140, 24, "conventional current: + → −", "tr small bold", "start");
+  s += F.arrow(330, 206, 270, 206, "b thick", 10) + F.text(300, 226, "electron flow: − → +", "tb small bold");
+  return F.fig(440, 240, s, "Conventional current is drawn leaving the positive terminal (the long plate of the cell). Electrons actually move the other way.", { size: "small" }); })()}
+<h3>Measuring current</h3>
+<p>Use an <b>ammeter</b> connected in <b>series</b>, in the path of the current, so all the charge flows through it. An ideal ammeter has (nearly) zero resistance, so it doesn't reduce the current it measures. Analogue meters: read the scale at eye level and check the zero. Digital meters: choose a range just above the expected value.</p>
 <h3>d.c. and a.c. (S)</h3>
-<p><b>Direct current</b> flows in one direction only (cells, batteries). <b>Alternating current</b> repeatedly reverses direction. UK mains is 50 Hz, 230 V, so it reverses 100 times a second. On an oscilloscope, d.c. is a horizontal line and a.c. is a wave.</p>`},
-    { h: "E.m.f. and potential difference", body: P`
-<p>Both are measured in <b>volts</b>, and both are about <b>energy per unit charge</b>, but in opposite directions:</p>
-<ul><li><b>Electromotive force (e.m.f.)</b>: the electrical work done by a source in moving a unit charge around a complete circuit. It is energy <b>given to</b> each coulomb by the cell.</li>
-<li><b>Potential difference (p.d.)</b>: the work done by a unit charge passing through a component. It is energy <b>transferred from</b> each coulomb to the component.</li></ul>
+${F.row(
+  F.plot({ w: 260, h: 180, x: [0, 10], y: [-1.5, 1.5], grid: false, xlabel: "t", ylabel: "I", m: { l: 18, r: 16, t: 14, b: 16 }, curves: [{ f: x => 1, c: "b thick" }], cap: "<b>d.c.</b>: flows in one direction only (cells, batteries)." }),
+  F.plot({ w: 260, h: 180, x: [0, 10], y: [-1.5, 1.5], grid: false, xlabel: "t", ylabel: "I", m: { l: 18, r: 16, t: 14, b: 16 }, curves: [{ f: x => Math.sin(x * 1.6), c: "o thick" }], cap: "<b>a.c.</b>: repeatedly reverses direction (mains: 50 Hz)." })
+)}
+<p><b>Direct current</b> flows in one direction only. <b>Alternating current</b> changes direction back and forth many times a second. Mains electricity in many countries is a.c. at about 230 V and 50 Hz (it completes 50 cycles a second).</p>
+<div class="callout ex"><b class="t">Worked example</b>A charge of 360 C flows through a lamp in 2 minutes. Find the current.<br>$I=\dfrac{Q}{t}=\dfrac{360}{120}=3.0$ A. Time must be in <b>seconds</b>.</div>
+<details class="check"><summary>A phone charger supplies 2.0 A for 1.5 hours. How much charge flows?</summary><div>$Q=It=2.0\times5400=10\,800$ C.</div></details>`},
+
+    { h: "E.m.f. and potential difference (4.2.3)", body: P`
+<p class="lead">Both are measured in <b>volts</b> and both describe <b>energy per unit charge</b>, but in opposite directions: one is energy <i>given to</i> charge, the other is energy <i>given up</i> by charge.</p>
+<ul><li><b>Electromotive force (e.m.f.)</b>: the electrical work done by a source (cell, battery, generator) in moving a unit charge around a complete circuit. It's the energy <b>supplied</b> to each coulomb.</li>
+<li><b>Potential difference (p.d.)</b>: the work done by a unit charge passing through a component. It's the energy <b>transferred</b> from each coulomb to the component (as light, heat, etc.).</li></ul>
 $$E=\frac{W}{Q}\qquad V=\frac{W}{Q}\qquad1\text{ V}=1\text{ J/C}$$
-<p>A 12 V battery gives 12 J to every coulomb that passes through it. Around the circuit, the coulombs transfer all of that energy to the components. So in a series circuit the p.d.s add up to the e.m.f. (energy is conserved).</p>
-<p>P.d. is measured with a <b>voltmeter</b> connected in <b>parallel</b> across the component, because it compares the energy of charge on either side. An ideal voltmeter has very high resistance, so almost no current flows through it.</p>
-<div class="callout key"><b class="t">Analogy that works</b>Charges are delivery vans that circulate forever. Voltage is the number of energy parcels each van carries. Current is how many vans pass per second. Components unload the parcels. The vans are never used up; only the energy is transferred.</div>`},
-    { h: "Resistance and I–V graphs", body: P`
-$$R=\frac{V}{I}\qquad(\text{ohms, }\Omega)$$
-<p>Resistance tells you how much p.d. is needed to drive each amp of current through a component. A higher resistance means less current for the same p.d.</p>
+<p>A 12 V battery gives 12 J of energy to every coulomb that passes through it. As that coulomb travels round the circuit, it gives all 12 J to the components. In a series circuit, the p.d.s across the components therefore <b>add up to the e.m.f.</b>: energy is conserved.</p>
+${(() => { let s = loop(60, 50, 400, 190) + F.comp("cell", 60, 120, { v: true }) + F.comp("lamp", 170, 50) + F.comp("resistor", 300, 50);
+  s += F.wire([[140, 50], [140, 100], [200, 100], [200, 50]]) + F.comp("voltmeter", 170, 100) + F.junction(140, 50) + F.junction(200, 50);
+  s += F.text(76, 124, "e.m.f. 6 V", "tk small bold", "start") + F.text(300, 30, "p.d. 2 V", "tk small bold") + F.text(170, 30, "p.d. 4 V", "tk small bold");
+  return F.fig(440, 240, s, "A voltmeter is connected in <b>parallel</b> across the component it measures. Here the 6 V supply is shared: 4 V + 2 V = 6 V.", { size: "small" }); })()}
+<p>Measure p.d. with a <b>voltmeter</b> connected in <b>parallel</b> (across) the component. It compares the energy of the charge on either side. An ideal voltmeter has a very high resistance, so almost no current flows through it.</p>
+<div class="callout key"><b class="t">An analogy that works</b>Charges are delivery vans circulating forever round a loop. The battery loads each van with energy parcels (e.m.f. = parcels per van). Each component unloads some parcels (p.d.). Current is how many vans pass per second. Vans are never used up; only energy is transferred.</div>
+<div class="callout ex"><b class="t">Worked example</b>A lamp transfers 4320 J when 360 C flow through it. Find the p.d.<br>$V=\dfrac WQ=\dfrac{4320}{360}=12$ V.</div>
+<details class="check"><summary>A 9 V battery drives 0.2 A for 10 minutes. How much energy does it supply?</summary><div>$Q=0.2\times600=120$ C, so $W=EQ=9\times120=1080$ J.</div></details>`},
+
+    { h: "Resistance and I–V characteristics (4.2.4)", body: P`
+$$R=\frac{V}{I}\qquad(\text{ohms},\ \Omega)$$
+<p class="lead">Resistance tells you how much p.d. is needed to push each amp of current through a component. More resistance means less current for the same p.d. 1 Ω means 1 volt per amp.</p>
 <h3>The experiment</h3>
-<p>Connect the component in series with an ammeter and a variable resistor (or variable power supply), with a voltmeter in parallel across the component. Vary the p.d., record $V$ and $I$ for several values (and reversed polarity for a diode), and calculate $R=V/I$ for each, or plot $I$ against $V$.</p>
+${(() => { let s = loop(50, 50, 430, 200) + F.comp("battery", 50, 125, { v: true }) + F.comp("ammeter", 130, 50) + F.comp("variable", 230, 50, { label: "variable resistor" }) + F.comp("resistor", 360, 200, { label: "component under test", ly: 26 });
+  s += F.wire([[320, 200], [320, 150], [400, 150], [400, 200]]) + F.comp("voltmeter", 360, 150) + F.junction(320, 200) + F.junction(400, 200);
+  return F.fig(480, 250, s, "Ammeter in series, voltmeter in parallel across the component. The variable resistor changes the current so you can take several readings.", { size: "small" }); })()}
+<ol class="steps-inline"><li>Set up the circuit above. Adjust the variable resistor to vary the current.</li>
+<li>For each setting, record $V$ (voltmeter) and $I$ (ammeter). Take at least 6 readings over a wide range.</li>
+<li>Reverse the battery connections to take negative values (this matters for a diode).</li>
+<li>Calculate $R=V/I$ for each pair, or plot $I$ against $V$. Switch off between readings so the component doesn't heat up (unless that's what you're studying).</li></ol>
+<h3>I–V graphs</h3>
 <div class="viz" data-viz="ivGraphs"></div>
-<ul>
-<li><b>Fixed resistor at constant temperature</b>: a straight line through the origin, so $I\propto V$ and $R$ is constant. This is an <b>ohmic</b> conductor.</li>
-<li><b>Filament lamp</b>: the curve gets <b>less steep</b> as $V$ increases, so $R$ <b>increases</b>. Why (S)? A larger current heats the filament. The metal ions vibrate more, the electrons collide with them more often, and the resistance rises.</li>
-<li><b>Diode</b>: conducts in one direction only (above about 0.6 V forward). In reverse, the current is almost zero: very high resistance.</li>
-</ul>
+${F.row(iv(v => v / 4.5, "Fixed resistor", "straight line through the origin, so $I\\propto V$ and $R$ is constant (ohmic).", "b"), iv(v => Math.sign(v) * 1.4 * Math.tanh(Math.abs(v) / 3), "Filament lamp", "the gradient decreases as $V$ increases, so $R$ increases.", "o"), iv(v => v < .7 ? 0 : Math.min(1.5, (v - .7) * 1.2), "Diode", "current flows only in the forward direction, above about 0.7 V.", "g"))}
+<ul><li><b>Fixed resistor (at constant temperature)</b>: a straight line through the origin. Current is directly proportional to p.d., so the resistance is constant. Reversing the p.d. just reverses the current.</li>
+<li><b>Filament lamp</b>: a curve that gets <b>less steep</b> as the p.d. increases, so equal increases in $V$ give smaller and smaller increases in $I$, which means the resistance is <b>increasing</b>.</li>
+<li><b>Diode</b>: almost no current in the reverse direction (very high resistance). In the forward direction, current starts flowing above about 0.6–0.7 V.</li></ul>
+<h3>Why the lamp's resistance rises (S)</h3>
+<p>Current is a flow of electrons through a lattice of metal ions. A larger current heats the filament. Hotter ions <b>vibrate more</b>, so the electrons <b>collide with them more often</b>, which makes it harder for them to pass. Resistance increases.</p>
 <h3>What affects a wire's resistance (S)</h3>
-<p>$R\propto L$: a wire twice as long has twice the resistance, because electrons make twice as many collisions. $R\propto\dfrac1A$: a wire with twice the cross-sectional area has half the resistance, because it's like two wires side by side, giving more paths. (Doubling the <i>diameter</i> quadruples the area, so it quarters $R$.)</p>
-<p>Two special resistors: a <b>thermistor</b>'s resistance <b>decreases as temperature increases</b>, and an <b>LDR</b>'s resistance <b>decreases as light intensity increases</b>.</p>`},
-    { h: "Electrical power and energy", body: P`
+${F.row(
+  (() => { let s = F.rect(20, 30, 120, 16, "k oS", 8) + F.rect(20, 80, 240, 16, "k oS", 8) + F.text(150, 44, "length L: R", "tk small", "start") + F.text(270, 94, "2L: 2R", "tk small bold", "start"); return F.fig(330, 120, s, "$R\\propto L$: twice the length, twice the collisions, twice the resistance."); })(),
+  (() => { let s = F.rect(20, 34, 200, 12, "k oS", 6) + F.rect(20, 74, 200, 26, "k oS", 13) + F.text(230, 44, "area A: R", "tk small", "start") + F.text(230, 92, "2A: ½R", "tk small bold", "start"); return F.fig(320, 120, s, "$R\\propto\\dfrac1A$: double the cross-sectional area gives twice as many paths, so half the resistance."); })()
+)}
+<p>Doubling the <b>diameter</b> multiplies the area by 4, so the resistance falls to ¼. Material and temperature matter too.</p>
+<h3>Thermistors and LDRs</h3>
+${F.row(
+  F.plot({ w: 260, h: 190, x: [0, 10], y: [0, 10], grid: false, xlabel: "temperature", ylabel: "R", m: { l: 20, r: 16, t: 14, b: 18 }, curves: [{ f: x => 9 * Math.exp(-x / 3) + .4, c: "r thick" }], cap: "<b>Thermistor</b>: resistance <b>decreases</b> as temperature increases." }),
+  F.plot({ w: 260, h: 190, x: [0, 10], y: [0, 10], grid: false, xlabel: "light intensity", ylabel: "R", m: { l: 20, r: 16, t: 14, b: 18 }, curves: [{ f: x => 9 / (1 + x) + .3, c: "b thick" }], cap: "<b>LDR</b>: resistance <b>decreases</b> as light intensity increases." })
+)}
+<details class="check"><summary>A resistor has 6.0 V across it and 0.25 A through it. Find its resistance. What current flows at 9.0 V?</summary><div>$R=6.0/0.25=24\,\Omega$. At 9.0 V: $I=9.0/24=0.375$ A (constant $R$).</div></details>`},
+
+    { h: "Electrical power and energy (4.2.5)", body: P`
 $$P=IV\qquad E=IVt=Pt$$
-<p>Why $P=IV$? $V$ is joules per coulomb and $I$ is coulombs per second. Multiplying gives joules per second, which is watts.</p>
-<p>Combining with $V=IR$ gives $P=I^2R$ and $P=\dfrac{V^2}{R}$. These are useful when you don't know one of the quantities.</p>
-<h3>Paying for electricity</h3>
-<p>Energy companies charge per <b>kilowatt-hour (kWh)</b>: the energy used by a 1 kW appliance in 1 hour, which is $1000\times3600=3.6\times10^6$ J.</p>
-<p>A 2.5 kW heater for 4 hours uses $2.5\times4=10$ kWh. At 30 cents per kWh it costs 300 cents. Use <b>kW</b> and <b>hours</b> for kWh calculations and <b>W</b> and <b>seconds</b> for joules.</p>`},
-    { h: "Circuit diagrams and components", body: P`
-<p>You need to recognise and draw the standard symbols: cell, battery, power supply, a.c. supply, switch, lamp, fixed resistor, variable resistor, thermistor, LDR, heater, fuse, ammeter (A in a circle), voltmeter (V in a circle), diode, LED, motor, generator, transformer, relay and earth.</p>
-<ul><li>A <b>cell</b> is one long line and one short line. The long line is <b>positive</b>. A <b>battery</b> is two or more cells in series.</li>
-<li>Draw wires as straight lines with right-angle corners, and put a dot at junctions.</li>
-<li>Ammeters go in the line, in series. Voltmeters bridge across a component.</li></ul>
-<p>Cells in series add their e.m.f.s if they face the same way (and subtract if one is reversed).</p>`},
-    { h: "Series and parallel circuits", body: P`
+<p class="lead">Power is the <b>rate of energy transfer</b>, in watts (1 W = 1 J/s). $P=IV$ follows directly from the definitions: $V$ is joules per coulomb and $I$ is coulombs per second, so $IV$ is joules per second.</p>
+<p>Combining with $V=IR$ gives two more useful forms: $P=I^2R$ (when you know the current and resistance) and $P=\dfrac{V^2}{R}$ (when you know the p.d. and resistance). Heating in a wire grows with the <b>square</b> of the current, which is why power lines use high voltages and small currents.</p>
+<div class="callout ex"><b class="t">Worked example</b>A 2.3 kW kettle runs on 230 V for 3 minutes. Find the current and the energy transferred.<br>$I=\dfrac PV=\dfrac{2300}{230}=10$ A. $\;E=Pt=2300\times180=414\,000$ J $=414$ kJ.</div>
+<h3>The kilowatt-hour</h3>
+<p>Joules are tiny for household use, so electricity companies charge per <b>kilowatt-hour (kWh)</b>: the energy transferred by a 1 kW appliance in 1 hour.</p>
+$$1\text{ kWh}=1000\text{ W}\times3600\text{ s}=3.6\times10^6\text{ J}$$
+<div class="callout ex"><b class="t">Worked example: cost</b>A 2.5 kW heater is used for 4 hours a day for 30 days at 15 cents per kWh. Find the cost.<br>Energy $=2.5\times4\times30=300$ kWh. Cost $=300\times15=4500$ cents $=45$ dollars.</div>
+<div class="callout warn"><b class="t">Units</b>For kWh use <b>kW and hours</b>. For joules use <b>W and seconds</b>. Mixing them (kW × seconds) is the commonest error.</div>
+<details class="check"><summary>A 60 W bulb is left on for 8 hours. How many kWh is that, and how many joules?</summary><div>$0.060\times8=0.48$ kWh $=0.48\times3.6\times10^6=1.73\times10^6$ J.</div></details>`},
+
+    { h: "Circuit diagrams and symbols (4.3.1)", body: P`
+<p class="lead">Circuit diagrams use standard symbols so anyone can read them. You must recognise and draw all of these.</p>
+<div class="sym-grid">${sym("cell", "cell")}${sym("battery", "battery")}${sym("switch", "switch (open)")}${sym("switch", "switch (closed)", { closed: true })}${sym("lamp", "lamp")}${sym("resistor", "fixed resistor")}${sym("variable", "variable resistor")}${sym("thermistor", "thermistor")}${sym("ldr", "LDR")}${sym("heater", "heater")}${sym("fuse", "fuse")}${sym("ammeter", "ammeter")}${sym("voltmeter", "voltmeter")}${sym("diode", "diode")}${sym("led", "LED")}${sym("motor", "motor")}</div>
+<ul><li>In a <b>cell</b>, the <b>long thin line is positive</b> and the short thick line is negative. A <b>battery</b> is two or more cells joined in series.</li>
+<li>Draw wires as straight lines with square corners, and mark junctions (where wires join) with a dot.</li>
+<li>A diode's triangle points in the direction conventional current is allowed to flow.</li>
+<li>Cells in series facing the same way <b>add</b> their e.m.f.s: three 1.5 V cells make 4.5 V. One reversed cell subtracts.</li></ul>
+<details class="check"><summary>What's the difference between the thermistor and variable resistor symbols?</summary><div>The variable resistor has a straight diagonal arrow through it. The thermistor has a diagonal line with a short flat "hook" at the end (no arrowhead).</div></details>`},
+
+    { h: "Series and parallel circuits (4.3.2)", body: P`
+${F.row(
+  (() => { let s = loop(40, 40, 320, 180) + F.comp("battery", 40, 110, { v: true, label: "6 V", lx: -50 }) + F.comp("lamp", 140, 40) + F.comp("lamp", 240, 40) + F.comp("ammeter", 180, 180) + F.comp("ammeter", 320, 110, { v: true });
+    s += F.text(180, 214, "0.3 A", "tk small bold") + F.text(338, 114, "0.3 A", "tk small bold", "start"); return F.fig(380, 230, s, "<b>Series</b>: one path. The current is the same everywhere."); })(),
+  (() => { let s = F.wire([[40, 40], [340, 40], [340, 190], [40, 190], [40, 40]]) + F.wire([[220, 40], [220, 190]]) + F.junction(220, 40) + F.junction(220, 190) + F.comp("battery", 40, 115, { v: true, label: "6 V", lx: -50 }) + F.comp("lamp", 220, 115, { v: true }) + F.comp("lamp", 340, 115, { v: true }) + F.comp("ammeter", 130, 40);
+    s += F.text(130, 22, "0.6 A", "tk small bold") + F.text(236, 150, "0.3 A", "tk small bold", "start") + F.text(356, 150, "0.3 A", "tk small bold", "start"); return F.fig(400, 230, s, "<b>Parallel</b>: the current splits at the junction and recombines."); })()
+)}
 <table class="t"><tr><th></th><th>Series</th><th>Parallel</th></tr>
-<tr><td>Current</td><td>The <b>same</b> everywhere</td><td>Splits at junctions: $I=I_1+I_2$</td></tr>
-<tr><td>P.d.</td><td>Shared: $V=V_1+V_2$</td><td>The <b>same</b> across each branch</td></tr>
-<tr><td>Resistance</td><td>$R=R_1+R_2$</td><td>$\dfrac1R=\dfrac1{R_1}+\dfrac1{R_2}$</td></tr></table>
-<p><b>Why?</b> The current rules come from <b>conservation of charge</b>: charge can't pile up or vanish, so whatever flows into a junction must flow out. The p.d. rules come from <b>conservation of energy</b>: each coulomb gives up all the energy it gained, whichever route it takes.</p>
-<p>Adding a resistor in parallel <b>decreases</b> the total resistance, because it gives the current an extra path. So the combined resistance of a parallel pair is <b>always less than the smallest branch</b>. That's a great way to check your answer. For two equal resistors in parallel, $R_{total}=\tfrac12R$.</p>
+<tr><td>Current</td><td>The <b>same</b> at every point</td><td>Splits between branches: $I=I_1+I_2$; total is larger than in any branch</td></tr>
+<tr><td>P.d.</td><td>Shared between components: $V=V_1+V_2$</td><td>The <b>same</b> across each branch (equal to the supply p.d.)</td></tr>
+<tr><td>Total resistance</td><td>$R=R_1+R_2$ (adds up)</td><td>$\dfrac1R=\dfrac1{R_1}+\dfrac1{R_2}$ (less than the smallest)</td></tr>
+<tr><td>One lamp fails</td><td>All go out</td><td>Others stay on</td></tr></table>
+<h3>Why these rules are true</h3>
+<ul><li><b>Current rules come from conservation of charge.</b> Charge can't be created, destroyed or pile up at a point, so the current into a junction equals the current out (S). In a series loop there's only one path, so the same current passes everywhere.</li>
+<li><b>P.d. rules come from conservation of energy.</b> Each coulomb gets energy $E$ from the supply and gives it all away. In series it gives part to each component, so the p.d.s add. In parallel each coulomb goes through only one branch and gives all its energy there, so each branch has the full p.d.</li></ul>
+<h3>Combined resistance</h3>
+<p><b>Series</b>: the charge must pass through both resistances one after the other, so they add: $R=R_1+R_2$.</p>
+<p><b>Parallel</b>: adding a branch gives the current an <b>extra path</b>, so more current flows for the same p.d. and the total resistance <b>decreases</b>. The combined resistance is <b>always less than the smallest individual resistor</b>. That's a useful check. For two equal resistors, $R_{total}=\tfrac12R$. For two resistors there's a shortcut: $R=\dfrac{R_1R_2}{R_1+R_2}$ (product over sum).</p>
+<div class="callout ex"><b class="t">Worked example (S)</b>A 12 V battery is connected to a 6 Ω resistor in series with a parallel pair of 4 Ω and 12 Ω.<br>Parallel pair: $\dfrac1R=\dfrac14+\dfrac1{12}=\dfrac4{12}$, so $R=3\,\Omega$. Total $=6+3=9\,\Omega$.<br>Current from battery: $I=\dfrac{12}{9}=1.33$ A. P.d. across the 6 Ω: $1.33\times6=8$ V. Across the parallel pair: $12-8=4$ V.<br>Branch currents: $\dfrac44=1.0$ A and $\dfrac4{12}=0.33$ A. Check: $1.0+0.33=1.33$ A ✓</div>
 <h3>Why houses use parallel circuits</h3>
-<p>Each lamp gets the full mains p.d., each can be switched on and off independently, and if one bulb fails the others stay on. In series, one broken lamp breaks the whole circuit, and adding lamps makes them all dimmer.</p>
-<p>Try the circuit simulator below. Switch between series and parallel and watch the electron flow change.</p>`},
-    { h: "Sensors and potential dividers", body: P`
-<p>Two resistors in series share the supply p.d. in the <b>ratio of their resistances</b> (S):</p>
-$$\frac{V_1}{V_2}=\frac{R_1}{R_2}$$
-<p>This is a <b>potential divider</b>. The bigger resistor gets the bigger share. A variable resistor (or a potentiometer with a sliding contact) gives a <b>variable</b> output p.d.</p>
-<h3>Sensor circuits</h3>
-<p>Replace one resistor with a <b>thermistor</b> or <b>LDR</b>. Take a thermistor in series with a fixed resistor, with the output measured across the fixed resistor. As the temperature rises, the thermistor's resistance <b>falls</b>, so it takes a <b>smaller share</b> of the p.d., and the p.d. across the fixed resistor <b>rises</b>. That output can switch on a fan or alarm (often via a relay).</p>
-<div class="callout tip"><b class="t">How to answer "explain what happens to the reading"</b>Go step by step: (1) the condition changes, e.g. it gets darker; (2) the LDR's resistance increases; (3) the LDR's share of the p.d. increases (or the current decreases); (4) so the voltmeter reading across X changes in this direction. Each link is usually a mark.</div>
-<p><b>Diode:</b> allows current in one direction only. It is used to protect circuits from a reversed battery and to convert a.c. into d.c. (rectification). An <b>LED</b> is a diode that emits light when current flows forwards.</p>`},
-    { h: "Electrical safety", body: P`
+<p>Each appliance gets the full mains p.d., each can be switched on and off independently, and if one fails the rest keep working. Christmas lights in series all go out when one bulb fails.</p>
+<p>Try the simulator below. Switch between series and parallel and compare the electron speeds.</p>
+<details class="check"><summary>Three 6 Ω resistors are connected in parallel. What's the total resistance?</summary><div>$\dfrac1R=\dfrac16\times3=\dfrac12$, so $R=2\,\Omega$.</div></details>`},
+
+    { h: "Sensors, potential dividers and diodes (4.3.3)", body: P`
+<p class="lead">Two resistors in series share the supply p.d. in the <b>ratio of their resistances</b>. This arrangement, a <b>potential divider</b>, is how electronic sensors turn a change in temperature or light into a change in voltage.</p>
+$$\frac{V_1}{V_2}=\frac{R_1}{R_2}\qquad\text{(S)}\qquad\text{equivalently}\qquad V_{out}=V_{in}\times\frac{R_2}{R_1+R_2}$$
+<p>Why? The same current $I$ flows through both, so $V_1=IR_1$ and $V_2=IR_2$. Dividing gives the ratio. <b>The bigger resistor takes the bigger share of the p.d.</b></p>
+${F.row(
+  (() => { let s = F.wire([[60, 30], [60, 230]]) + F.wire([[60, 30], [200, 30], [200, 230], [60, 230]]) + F.comp("battery", 60, 130, { v: true, label: "9 V", lx: -46 }) + F.comp("thermistor", 200, 85, { v: true, label: "thermistor", lx: 26 }) + F.comp("resistor", 200, 175, { v: true, label: "fixed R", lx: 26 });
+    s += F.wire([[200, 140], [300, 140]]) + F.wire([[200, 230], [300, 230]]) + F.junction(200, 140) + F.junction(200, 230) + F.circ(300, 140, 4, "k bgF") + F.circ(300, 230, 4, "k bgF") + F.text(310, 190, "V out", "tk bold", "start");
+    return F.fig(380, 260, s, "Temperature sensor: as it warms, the thermistor's resistance falls, so it takes less of the p.d. and $V_{out}$ (across the fixed resistor) <b>rises</b>."); })(),
+  (() => { let s = F.wire([[60, 30], [60, 230]]) + F.wire([[60, 30], [200, 30], [200, 230], [60, 230]]) + F.comp("battery", 60, 130, { v: true, label: "6 V", lx: -46 }) + F.comp("resistor", 200, 85, { v: true, label: "fixed R", lx: 26 }) + F.comp("ldr", 200, 175, { v: true, label: "LDR", lx: 30 });
+    s += F.wire([[200, 140], [300, 140]]) + F.wire([[200, 230], [300, 230]]) + F.junction(200, 140) + F.junction(200, 230) + F.circ(300, 140, 4, "k bgF") + F.circ(300, 230, 4, "k bgF") + F.text(310, 190, "V out", "tk bold", "start");
+    return F.fig(380, 260, s, "Darkness sensor: in the dark the LDR's resistance rises, so it takes a bigger share and $V_{out}$ (across the LDR) <b>rises</b>, which can switch on a street light."); })()
+)}
+<div class="callout ex"><b class="t">Worked example</b>A 9.0 V supply is across a 2.0 kΩ resistor in series with a thermistor of 1.0 kΩ. Find the p.d. across the thermistor.<br>Ratio $1:2$, so the thermistor gets $\tfrac13$ of 9.0 V $=3.0$ V. If the thermistor is heated, its resistance falls, so its share (and its p.d.) <b>decreases</b>.</div>
+<div class="callout exam"><b class="t">How to answer "explain what happens to the reading"</b>Chain it: (1) the condition changes (it gets darker); (2) the LDR's resistance <b>increases</b>; (3) so the LDR's <b>share</b> of the supply p.d. increases (the current through both decreases); (4) so the voltmeter across [component] reads more or less. Each link is usually worth a mark.</div>
+<h3>Variable potential divider</h3>
+<p>A <b>potentiometer</b> is a resistor with a sliding contact. Moving the slider changes the ratio of the two parts, giving any output p.d. from 0 up to the full supply. Volume controls and dimmer switches work this way.</p>
+<h3>Diodes and LEDs</h3>
+<p>A <b>diode</b> lets current flow in <b>one direction only</b>. Uses: protecting circuits from batteries inserted the wrong way round, and <b>rectification</b> (turning a.c. into d.c.). An <b>LED</b> (light-emitting diode) is a diode that emits light when current flows forwards. It's very efficient, used as an indicator light and for lighting.</p>
+<details class="check"><summary>In the temperature sensor above, what happens to $V_{out}$ if the room cools?</summary><div>The thermistor's resistance increases, so it takes a larger share of the 9 V, and $V_{out}$ across the fixed resistor decreases.</div></details>`},
+
+    { h: "Electrical safety (4.4)", body: P`
 <h3>Hazards</h3>
-<ul><li><b>Damaged insulation</b>: exposed live wires can give a fatal shock.</li>
-<li><b>Overheating of cables</b>: too much current (too many appliances on one socket, or cables too thin) heats the wires and can start a fire.</li>
-<li><b>Damp conditions</b>: water conducts, so it can create a path from a live wire through a person.</li></ul>
+<ul><li><b>Damaged insulation</b>: exposed live wires can give a fatal electric shock, or short-circuit and start a fire.</li>
+<li><b>Overheating of cables</b>: too large a current (too many appliances on one socket, or cables too thin for the current) heats the wires, which can melt insulation and start a fire.</li>
+<li><b>Damp conditions</b>: water conducts electricity, so it can create a path from a live wire through a person to earth. That's why bathroom sockets are banned or specially protected.</li></ul>
 <h3>The three wires</h3>
-<p><b>Live</b> (brown) carries the alternating p.d. from the supply. <b>Neutral</b> (blue) completes the circuit, near 0 V. <b>Earth</b> (green and yellow) is a safety wire connected to the metal case, carrying current only when there's a fault.</p>
+${(() => { let s = F.rect(60, 30, 300, 200, "k mS", 24);
+  s += F.rect(190, 50, 22, 50, "k bgF", 3) + F.text(201, 116, "E", "tk bold");
+  s += F.rect(90, 160, 50, 22, "k bgF", 3) + F.text(115, 202, "N", "tk bold") + F.rect(280, 160, 50, 22, "k bgF", 3) + F.text(305, 202, "L", "tk bold");
+  s += F.rect(250, 120, 60, 18, "k oS", 4) + F.text(280, 134, "fuse", "tk small bold") + F.line(300, 138, 305, 160, "o thick");
+  s += F.path("M210,250 C210,200 210,140 201,100", "g thick") + F.path("M200,250 C190,220 140,200 115,182", "b thick") + F.path("M220,250 C230,200 260,150 280,138", "o thick");
+  s += F.rect(180, 230, 60, 22, "k bgF", 4) + F.text(210, 246, "cord grip", "tk small");
+  s += F.text(380, 70, "earth: green/yellow", "tg small bold", "start") + F.text(380, 100, "neutral: blue", "tb small bold", "start") + F.text(380, 130, "live: brown (via fuse)", "to small bold", "start");
+  return F.fig(540, 270, s, "Inside a UK-style three-pin plug. The fuse is connected to the live pin. The cord grip clamps the cable's outer insulation.", { size: "wide" }); })()}
+<ul><li><b>Live</b> (brown): carries the alternating high p.d. from the supply. It's the dangerous wire.</li>
+<li><b>Neutral</b> (blue): completes the circuit and stays close to 0 V.</li>
+<li><b>Earth</b> (green and yellow stripes): a safety wire connecting the appliance's metal case to the ground. It normally carries no current.</li></ul>
 <h3>Fuses and circuit breakers</h3>
-<p>A <b>fuse</b> is a thin wire in the <b>live</b> wire. If the current exceeds the fuse rating, it heats up and <b>melts</b>, breaking the circuit. A <b>circuit breaker</b> (trip switch) does the same job with an electromagnet that opens a switch. It acts faster and can be reset.</p>
-<p><b>Choosing a fuse:</b> calculate the normal current $I=P/V$, then choose the <b>next rating above</b> it (e.g. 3 A, 5 A, 13 A). Too high and it won't protect the wiring. Too low and it blows during normal use.</p>
-<h3>Earthing (with a fuse)</h3>
-<p>If a live wire touches a metal case, a large current flows through the low-resistance <b>earth wire</b> instead of through a person. That large current <b>blows the fuse</b>, disconnecting the live supply. The case is now safe to touch.</p>
-<p><b>Double insulation:</b> appliances with plastic (non-conducting) cases don't need an earth wire, because the case can't become live.</p>
-<div class="callout warn"><b class="t">Why the fuse must be in the live wire</b>If it were in the neutral, a blown fuse would still leave the appliance connected to the live wire at 230 V. It would look off but still be dangerous.</div>`}
+<p>A <b>fuse</b> is a short, thin wire in a cartridge, connected in the <b>live</b> wire. If the current goes above the fuse's rating, the wire heats up and <b>melts</b>, breaking the circuit and cutting off the supply. It must then be replaced.</p>
+<p>A <b>circuit breaker</b> (trip switch) does the same job with an electromagnet (or a bimetallic strip) that <b>opens a switch</b> when the current is too large. It acts faster than a fuse and can simply be <b>reset</b>.</p>
+<p><b>Choosing a fuse:</b> work out the normal current with $I=\dfrac PV$, then choose the <b>next standard rating above</b> it (common ratings: 3 A, 5 A, 13 A). If it's too high it won't blow when it should; too low and it blows in normal use. A 2.3 kW kettle on 230 V draws 10 A, so it needs a 13 A fuse.</p>
+<h3>Earthing: how it protects you</h3>
+${(() => { let s = F.rect(200, 50, 200, 140, "k mS", 10) + F.text(210, 180, "metal case", "tk small bold", "start");
+  s += F.wire([[40, 90], [300, 90], [300, 140]]) + F.comp("fuse", 120, 90) + F.text(30, 94, "L", "to bold", "end") + F.path("M300,140 L320,150 L310,160 L330,172", "r thick") + F.text(410, 160, "fault: live wire", "tr small bold", "start") + F.text(410, 176, "touches case", "tr small bold", "start");
+  s += F.wire([[40, 130], [180, 130]]) + F.text(30, 134, "N", "tb bold", "end");
+  s += F.wire([[330, 190], [330, 240]]) + F.line(310, 240, 350, 240, "k") + F.line(316, 247, 344, 247, "k") + F.line(322, 254, 338, 254, "k") + F.text(360, 230, "earth wire to ground", "tg small bold", "start");
+  s += F.arrow(60, 74, 110, 74, "r mid", 8) + F.arrow(342, 200, 342, 230, "r mid", 8) + F.text(40, 60, "large current → fuse melts", "tr small bold", "start");
+  return F.fig(560, 270, s, "If the live wire touches the case, a large current flows through the low-resistance earth wire. That blows the fuse and disconnects the live supply, so the case can't stay live.", { size: "wide" }); })()}
+<ol class="steps-inline"><li>A fault makes the live wire touch the metal case.</li><li>The earth wire provides a <b>low-resistance path</b> from the case to the ground.</li><li>A very <b>large current</b> flows through the live and earth wires.</li><li>This current exceeds the fuse rating, so the fuse <b>melts</b> (or the breaker trips).</li><li>The live supply is <b>disconnected</b>, so the case is no longer live and is safe to touch.</li></ol>
+<h3>Double insulation</h3>
+<p>Appliances with a <b>non-conducting (plastic) case</b>, and no metal parts a user can touch, can't give a shock even if a live wire comes loose inside. They need <b>no earth wire</b> (two-core cable). They're marked with the symbol of a square inside a square.</p>
+<div class="callout warn"><b class="t">Why the fuse must be in the live wire</b>If it were in the neutral, a blown fuse would stop the current but leave the appliance connected to the live wire at a high p.d. It would look off but still be able to electrocute you.</div>
+<details class="check"><summary>A hairdryer is rated 1.2 kW, 230 V. Which fuse: 3 A, 5 A or 13 A?</summary><div>$I=1200/230=5.2$ A, which is just above 5 A, so a 13 A fuse.</div></details>`}
   ],
   worked: [
     { q: P`A 6.0 V battery is connected to 4 Ω and 12 Ω resistors in parallel. Find the total current.`,

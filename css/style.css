@@ -333,3 +333,5 @@ article h4{font:600 15px var(--sans);margin:18px 0 4px;color:var(--c);text-trans
 .steps-inline{counter-reset:s;list-style:none;padding:0}
 .steps-inline li{counter-increment:s;position:relative;padding-left:36px;margin:10px 0}
 .steps-inline li::before{content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--c);color:var(--accent-ink);font:700 12px/24px var(--sans);text-align:center}
+.sym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;max-width:780px;margin:18px 0}
+.sym-grid .fig{margin:0;padding:8px;max-width:none;box-shadow:none}
