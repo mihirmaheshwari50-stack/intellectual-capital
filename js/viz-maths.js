@@ -103,12 +103,12 @@
 
   // ---------- Bounds on a number line ----------
   V.bounds = (host) => mount(host, (ctx, W, H, t, P) => {
-    const k = seg(t, .5, 2.5), x0 = 40, x1 = W - 40, y = 120, lo = 6.5, hi = 8.5, X = (v) => x0 + (v - lo) / (hi - lo) * (x1 - x0);
+    const k = seg(t, .5, 2.5), x0 = 40, x1 = W - 40, y = 120, lo = 6.5, hi = 9.5, X = (v) => x0 + (v - lo) / (hi - lo) * (x1 - x0);
     ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
-    for (let v = 6.5; v <= 8.501; v += .1) { const big = Math.abs(v * 2 - Math.round(v * 2)) < 1e-6; ctx.beginPath(); ctx.moveTo(X(v), y - (big ? 10 : 5)); ctx.lineTo(X(v), y + (big ? 10 : 5)); ctx.stroke(); if (big) text(ctx, v.toFixed(1), X(v), y + 28, { size: 12, align: "center" }); }
-    const a = 7.5 - .5 * k, b = 7.5 + .5 * k;
-    ctx.fillStyle = cs("--maths") + "33"; ctx.fillRect(X(a), y - 30, X(b) - X(a), 22); dot(ctx, X(7.5), y, 6, cs("--maths"));
-    if (k > .95) { ctx.fillStyle = cs("--maths"); ctx.beginPath(); ctx.arc(X(7), y - 19, 6, 0, 7); ctx.fill(); ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(8), y - 19, 6, 0, 7); ctx.stroke(); text(ctx, "7.5 ≤ x < 8.5", W / 2, y - 48, { size: 18, align: "center", weight: 700, color: cs("--maths") }); text(ctx, "lower bound 7.5 (included)", X(7), y + 56, { size: 12, align: "center" }); text(ctx, "upper bound 8.5 (not included)", X(8), y + 74, { size: 12, align: "center" }); }
+    for (let i = 0; i <= 30; i++) { const v = lo + i * .1, big = i % 5 === 0; ctx.beginPath(); ctx.moveTo(X(v), y - (big ? 10 : 5)); ctx.lineTo(X(v), y + (big ? 10 : 5)); ctx.stroke(); if (big) text(ctx, v.toFixed(1), X(v), y + 28, { size: 12, align: "center" }); }
+    const a = 8 - .5 * k, b = 8 + .5 * k;
+    ctx.fillStyle = cs("--maths") + "33"; ctx.fillRect(X(a), y - 30, X(b) - X(a), 22); dot(ctx, X(8), y, 6, cs("--maths"));
+    if (k > .95) { ctx.fillStyle = cs("--maths"); ctx.beginPath(); ctx.arc(X(7.5), y - 19, 6, 0, 7); ctx.fill(); ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(8.5), y - 19, 6, 0, 7); ctx.stroke(); text(ctx, "7.5 ≤ x < 8.5", W / 2, y - 48, { size: 18, align: "center", weight: 700, color: cs("--maths") }); text(ctx, "lower bound 7.5 (included)", X(7.5), y + 56, { size: 12, align: "center" }); text(ctx, "upper bound 8.5 (not included)", X(8.5), y + 74, { size: 12, align: "center" }); }
     text(ctx, "A length is 8 cm, correct to the nearest cm. Every value that rounds to 8 lies in:", W / 2, 26, { size: 13, align: "center", weight: 600 });
   }, { h: 230, period: 6, caption: "Bounds: half the degree of accuracy either side of the rounded value" });
 
