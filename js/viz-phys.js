@@ -506,4 +506,62 @@
       if (txt !== last) { out.innerHTML = txt; last = txt; }
     });
   };
+
+  // ---------- d.c. motor: coil seen end-on + split ring ----------
+  V.motor = (host) => mount(host, (ctx, W, H, t) => {
+    const cx = W * .38, cy = H / 2, R = Math.min(90, H * .3), a = t * 1.6, c = cs("--physics"), b = cs("--maths"), r = cs("--bad");
+    ctx.fillStyle = r; ctx.fillRect(cx - R - 70, cy - 60, 40, 120); ctx.fillStyle = b; ctx.fillRect(cx + R + 30, cy - 60, 40, 120);
+    text(ctx, "N", cx - R - 50, cy + 6, { size: 18, weight: 700, align: "center", color: "#fff" }); text(ctx, "S", cx + R + 50, cy + 6, { size: 18, weight: 700, align: "center", color: "#fff" });
+    for (let k = -2; k <= 2; k++) { ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - R - 30, cy + k * 26); ctx.lineTo(cx + R + 30, cy + k * 26); ctx.stroke(); }
+    // coil sides at angle a (end view): side A at angle a, side B at a+π
+    const sA = [cx + R * Math.cos(a), cy + R * Math.sin(a)], sB = [cx - R * Math.cos(a), cy - R * Math.sin(a)];
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sA[0], sA[1]); ctx.lineTo(sB[0], sB[1]); ctx.stroke();
+    // the commutator reverses the current each half turn (as the coil passes vertical), so the side on the LEFT always carries current out of the page
+    const leftIsA = Math.cos(a) < 0;
+    [[sA, leftIsA], [sB, !leftIsA]].forEach(([p, isTop]) => { ctx.fillStyle = cs("--surface"); ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p[0], p[1], 13, 0, 7); ctx.fill(); ctx.stroke();
+      if (isTop) dot(ctx, p[0], p[1], 4, c); else { ctx.beginPath(); ctx.moveTo(p[0] - 7, p[1] - 7); ctx.lineTo(p[0] + 7, p[1] + 7); ctx.moveTo(p[0] + 7, p[1] - 7); ctx.lineTo(p[0] - 7, p[1] + 7); ctx.stroke(); }
+      const F = 40; arrow(ctx, p[0], p[1] + (isTop ? -16 : 16), p[0], p[1] + (isTop ? -16 - F : 16 + F), cs("--chem"), 3); });
+    text(ctx, "force", sA[0] + 18, sA[1] - 30, { size: 11, color: cs("--chem"), weight: 600 });
+    // split-ring commutator on the right
+    const kx = W * .82, ky = cy, kr = 30; [0, 1].forEach(i => { ctx.strokeStyle = i ? c : cs("--ink"); ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(kx, ky, kr, a + i * Math.PI + .25, a + i * Math.PI + Math.PI - .25); ctx.stroke(); });
+    ctx.fillStyle = cs("--muted"); ctx.fillRect(kx - kr - 22, ky - 8, 16, 16); ctx.fillRect(kx + kr + 6, ky - 8, 16, 16);
+    text(ctx, "split-ring commutator", kx, ky + kr + 26, { size: 12, align: "center", weight: 600 }); text(ctx, "carbon brushes", kx, ky - kr - 16, { size: 11, align: "center", color: cs("--muted") });
+    text(ctx, "end view: • current out of page, × into page", 16, 20, { size: 12, color: cs("--muted") });
+    text(ctx, "every half turn the commutator reverses the current, so the coil keeps turning the same way", 16, H - 10, { size: 12, color: cs("--ink"), weight: 600 });
+  }, { h: 330, period: 3.93, caption: "Forces on the two sides of the coil are opposite, producing a turning effect" });
+
+  // ---------- Induction: magnet pushed into and pulled out of a coil ----------
+  V.induction = (host) => mount(host, (ctx, W, H, t, P) => {
+    const ph = (t % P) / P, x0 = W * .52, cy = H / 2 - 10, cw = 160, mag = 120;
+    // magnet position: in (0–.25), stop (.25–.4), out (.4–.65), stop
+    const pos = ph < .25 ? ph / .25 : ph < .4 ? 1 : ph < .65 ? 1 - (ph - .4) / .25 : 0, vel = ph < .25 ? 1 : ph < .4 ? 0 : ph < .65 ? -1 : 0;
+    for (let i = 0; i < 12; i++) { ctx.strokeStyle = cs("--physics"); ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x0 + i * cw / 11, cy, 8, 34, 0, 0, 7); ctx.stroke(); }
+    const mx = x0 - mag - 40 + pos * (mag + 20); ctx.fillStyle = cs("--maths"); ctx.fillRect(mx, cy - 14, mag / 2, 28); ctx.fillStyle = cs("--bad"); ctx.fillRect(mx + mag / 2, cy - 14, mag / 2, 28);
+    text(ctx, "S", mx + mag / 4, cy + 5, { size: 14, weight: 700, align: "center", color: "#fff" }); text(ctx, "N", mx + 3 * mag / 4, cy + 5, { size: 14, weight: 700, align: "center", color: "#fff" });
+    // wires to meter
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, cy + 34); ctx.lineTo(x0, H - 40); ctx.lineTo(x0 + cw, H - 40); ctx.lineTo(x0 + cw, cy + 34); ctx.stroke();
+    const gx = x0 + cw / 2, gy = H - 40; ctx.fillStyle = cs("--surface"); ctx.beginPath(); ctx.arc(gx, gy, 26, 0, 7); ctx.fill(); ctx.stroke();
+    const needle = vel * .9; ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx, gy + 14); ctx.lineTo(gx + 26 * Math.sin(needle), gy + 14 - 26 * Math.cos(needle)); ctx.stroke(); text(ctx, "G", gx - 4, gy + 20, { size: 10, color: cs("--muted") });
+    text(ctx, vel > 0 ? "magnet moving IN: needle deflects one way" : vel < 0 ? "magnet moving OUT: needle deflects the other way" : "magnet still: no induced current", 16, 22, { size: 13, weight: 600 });
+    text(ctx, "Only a CHANGING field through the coil induces an e.m.f.", 16, 42, { size: 12, color: cs("--muted") });
+  }, { h: 300, period: 6, caption: "Electromagnetic induction: moving the magnet changes the field linking the coil" });
+
+  // ---------- Interactive: a.c. generator ----------
+  DEMOS.generator = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    const v = controls(root, [{ key: "f", label: "speed of rotation (turns/s)", min: .2, max: 1.5, step: .1, value: .5 }, { key: "N", label: "turns on coil", min: 10, max: 100, step: 10, value: 50 }, { key: "B", label: "magnet strength", min: .2, max: 1, step: .1, value: .6 }]);
+    const out = readout(root); let last = "", hist = [], ang = 0, tp = 0;
+    return loop((tt) => {
+      size(); const w = W(), h = H(), dt = Math.min(.05, tt - tp); tp = tt; ctx.clearRect(0, 0, w, h); ang += 2 * Math.PI * v.f * dt;
+      const peak = v.N * v.B * v.f * 2 * Math.PI * .05, emf = peak * Math.sin(ang); hist.push(emf); if (hist.length > 320) hist.shift();
+      const cx = 110, cy = h / 2, R = 60; ctx.fillStyle = css("--bad"); ctx.fillRect(cx - R - 40, cy - 50, 26, 100); ctx.fillStyle = css("--maths"); ctx.fillRect(cx + R + 14, cy - 50, 26, 100);
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 4; ctx.beginPath(); const ex = R * Math.cos(ang), ey = R * Math.sin(ang) * .35; ctx.moveTo(cx - ex, cy - 50); ctx.lineTo(cx - ex, cy + 50); ctx.lineTo(cx + ex, cy + 50); ctx.lineTo(cx + ex, cy - 50); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = css("--muted"); ctx.font = "12px Inter, sans-serif"; ctx.fillText("coil (side view)", cx - 44, h - 14);
+      const gx = 220, gw = w - gx - 20, gy = 20, gh = h - 40, maxE = 30; ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.moveTo(gx, gy + gh / 2); ctx.lineTo(gx + gw, gy + gh / 2); ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); hist.forEach((e, i) => { const X = gx + i / 320 * gw, Y = gy + gh / 2 - Math.max(-maxE, Math.min(maxE, e)) / maxE * gh / 2; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.fillText("e.m.f.", gx + 6, gy + 12); ctx.fillText("time →", gx + gw - 44, gy + gh / 2 + 16);
+      const txt = `Peak e.m.f. ≈ ${fix(peak, 1)} V, frequency ${fix(v.f, 1)} Hz. Faster rotation gives a bigger peak <i>and</i> more cycles per second. More turns or a stronger magnet gives a bigger peak only. The e.m.f. is zero when the coil's plane is at 90° to the field (sides moving along the field lines) and largest when the plane is parallel to the field (sides cutting the lines fastest).`;
+      if (txt !== last) { out.innerHTML = txt; last = txt; }
+    });
+  };
 })();
