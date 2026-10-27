@@ -292,5 +292,50 @@
     });
   };
 
+  // ---------- Chord sliding towards tangent as h -> 0 ----------
+  V.chordLimit = (host) => mount(host, (ctx, W, H, t, P) => {
+    const f = x => .3 * x * x, a = 1.2, gx = 50, gw = W - 80, gy = 20, gh = H - 56;
+    const X = x => gx + (x + 2) / 6 * gw, Y = y => gy + gh - y / 4 * gh;
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, Y(0)); ctx.lineTo(gx + gw, Y(0)); ctx.moveTo(X(0), gy); ctx.lineTo(X(0), gy + gh); ctx.stroke();
+    ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 3; ctx.beginPath(); for (let x = -2; x <= 4; x += .02) x === -2 ? ctx.moveTo(X(x), Y(f(x))) : ctx.lineTo(X(x), Y(f(x))); ctx.stroke();
+    const k = (Math.sin(t / P * 2 * Math.PI - Math.PI / 2) + 1) / 2, h = 2.2 * (1 - k) + 0.05 * k;
+    const b = a + h, m = (f(b) - f(a)) / h;
+    ctx.strokeStyle = cs("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X(a - .6), Y(f(a) - m * .6)); ctx.lineTo(X(b + .6), Y(f(b) + m * .6)); ctx.stroke();
+    dot(ctx, X(a), Y(f(a)), 6, cs("--maths")); dot(ctx, X(b), Y(f(b)), 6, cs("--bad"));
+    text(ctx, "A", X(a) - 4, Y(f(a)) - 12, { size: 13, weight: 700 }); text(ctx, "B", X(b) + 6, Y(f(b)) - 10, { size: 13, weight: 700, color: cs("--bad") });
+    text(ctx, `h = ${h.toFixed(2)}`, 16, 28, { size: 13, weight: 700 }); text(ctx, `gradient of AB = ${m.toFixed(3)}`, 16, 48, { size: 13, weight: 700, color: cs("--bad") });
+    if (h < .15) text(ctx, "as h → 0, gradient → 2×1.2 = 2.4: the derivative at x = 1.2", 16, H - 10, { size: 12, color: cs("--good"), weight: 600 });
+  }, { h: 280, period: 10, caption: "As B slides towards A (h → 0), the chord's gradient approaches the tangent's gradient: the derivative" });
+
+  // ---------- Interactive: gradient function explorer ----------
+  DEMOS.derivative = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 320);
+    const v = DEMOS._lib.controls(root, [{ key: "a", label: "a (coefficient of x³)", min: -2, max: 2, step: .5, value: 1 }, { key: "b", label: "b (coefficient of x²)", min: -4, max: 4, step: .5, value: -3 }, { key: "c", label: "c (coefficient of x)", min: -8, max: 8, step: 1, value: 0 }, { key: "x0", label: "point x", min: -3, max: 4, step: .1, value: 2 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const a = v.a, b = v.b, c = v.c, x0 = v.x0;
+      const f = x => a * x ** 3 + b * x * x + c * x, df = x => 3 * a * x * x + 2 * b * x + c;
+      const gy0 = 20, gh = (h - 50) / 2 - 6, gx = 50, gw = w - 70;
+      const draw = (fn, y0, ymax, color, label) => {
+        const X = x => gx + (x + 4) / 8 * gw, Y = y => y0 + gh - (y + ymax) / (2 * ymax) * gh;
+        ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, Y(0)); ctx.lineTo(gx + gw, Y(0)); ctx.moveTo(X(0), y0); ctx.lineTo(X(0), y0 + gh); ctx.stroke();
+        ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath(); let started = false;
+        for (let x = -4; x <= 4; x += .02) { const y = fn(x); if (Math.abs(y) > ymax * 1.3) { started = false; continue; } started ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); started = true; } ctx.stroke();
+        text(ctx, label, gx + 6, y0 + 14, { size: 12, weight: 700, color }); return X;
+      };
+      const ymax1 = Math.max(10, Math.abs(f(4)), Math.abs(f(-4))) * 1.1, ymax2 = Math.max(10, Math.abs(df(4)), Math.abs(df(-4))) * 1.1;
+      const X1 = draw(f, gy0, ymax1, col, "y = f(x)");
+      dot(ctx, X1(x0), gy0 + gh - (f(x0) + ymax1) / (2 * ymax1) * gh, 6, css("--bad"));
+      const X2 = draw(df, gy0 + gh + 14, ymax2, css("--bad"), "y = f′(x)  (gradient function)");
+      dot(ctx, X2(x0), gy0 + gh + 14 + gh - (df(x0) + ymax2) / (2 * ymax2) * gh, 6, css("--bad"));
+      const sgn = (k, suf) => k === 0 ? "" : (k < 0 ? " − " : (suf ? " + " : "")) + (Math.abs(k) === 1 && suf ? "" : Math.abs(k)) + suf;
+      const fexpr = `f(x) = ${a === 0 ? "" : (a === 1 ? "" : a === -1 ? "−" : a) + "x³"}${sgn(b, "x²")}${sgn(c, "x")}`.trim() || "0";
+      const dexpr = `f′(x) = ${3 * a === 0 ? "" : (3 * a === 1 ? "" : 3 * a === -1 ? "−" : 3 * a) + "x²"}${sgn(2 * b, "x")}${c ? (c < 0 ? " − " + Math.abs(c) : " + " + c) : ""}`.trim();
+      const msg = `<b>${fexpr}</b>. Rule: multiply by the power, reduce the power by 1 (aⁿ → naⁿ⁻¹). <b>${dexpr}</b>. At x = ${x0}, f′(${x0}) = <b>${df(x0).toFixed(2)}</b>: this is the gradient of the tangent to the top curve at that point. ${Math.abs(df(x0)) < 0.3 ? "Close to zero: near a turning point." : ""}`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
