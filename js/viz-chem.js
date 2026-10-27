@@ -501,5 +501,65 @@
     });
   };
 
+  // ---------- Fermentation ----------
+  V.fermentation = (host) => mount(host, (ctx, W, H, t, P) => {
+    const fx = W * .28, fy = H - 50, r = 70;
+    ctx.fillStyle = "#e8d48a66"; ctx.beginPath(); ctx.moveTo(fx - 18, fy - 2 * r + 10); ctx.lineTo(fx - 18, fy - r - 10); ctx.arc(fx, fy - r + 10, r - 6, -Math.PI / 2 - .26, Math.PI * 1.5 + .26, false); ctx.fill();
+    ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(fx, fy - r + 10, r, -Math.PI / 2 + .26, Math.PI * 1.5 - .26); ctx.stroke(); ctx.beginPath(); ctx.moveTo(fx - 18, fy - 2 * r + 12); ctx.lineTo(fx - 18, fy - 2 * r - 30); ctx.moveTo(fx + 18, fy - 2 * r + 12); ctx.lineTo(fx + 18, fy - 2 * r - 30); ctx.stroke();
+    // yeast cells and bubbles
+    for (let i = 0; i < 14; i++) { const a = rnd(i, 1) * 6.28, rr = rnd(i, 2) * (r - 20), x = fx + Math.cos(a) * rr + 3 * Math.sin(t * 2 + i), y = fy - r + 20 + Math.sin(a) * rr * .7; ctx.fillStyle = "#c9a64a"; ctx.beginPath(); ctx.ellipse(x, y, 5, 4, i, 0, 7); ctx.fill(); }
+    for (let i = 0; i < 12; i++) { const ph = (t * .5 + rnd(i, 3)) % 1, x = fx + (rnd(i, 4) - .5) * 70, y = fy - 20 - ph * (r * 1.3); ctx.strokeStyle = cs("--muted"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.stroke(); }
+    // delivery tube to limewater
+    const lx = W * .62, ly = H - 60; ctx.strokeStyle = cs("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(fx, fy - 2 * r - 30); ctx.lineTo(fx, fy - 2 * r - 50); ctx.lineTo(lx, fy - 2 * r - 50); ctx.lineTo(lx, ly - 10); ctx.stroke();
+    const milky = clamp(t / P * 1.4); ctx.fillStyle = `rgba(${200 + 40 * milky},${220 + 20 * milky},${235},${.35 + .45 * milky})`; ctx.fillRect(lx - 30, ly - 50, 60, 50); ctx.strokeStyle = cs("--ink"); ctx.beginPath(); ctx.moveTo(lx - 30, ly - 70); ctx.lineTo(lx - 30, ly); ctx.lineTo(lx + 30, ly); ctx.lineTo(lx + 30, ly - 70); ctx.stroke();
+    for (let i = 0; i < 4; i++) { const ph = (t + i / 4) % 1; ctx.strokeStyle = cs("--muted"); ctx.beginPath(); ctx.arc(lx + (i % 2 ? 5 : -5), ly - 12 - ph * 36, 3, 0, 7); ctx.stroke(); }
+    text(ctx, "glucose solution + yeast, 25–35 °C, no air", fx, H - 10, { size: 12, align: "center", weight: 600 }); text(ctx, milky > .6 ? "limewater turns milky: CO₂" : "limewater", lx, H - 30, { size: 12, align: "center", weight: 600, color: milky > .6 ? cs("--chem") : cs("--ink") });
+    text(ctx, "C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂", W - 16, 26, { size: 14, align: "right", weight: 700 }); text(ctx, "anaerobic respiration by yeast (enzymes)", W - 16, 46, { size: 12, align: "right", color: cs("--muted") });
+  }, { h: 300, period: 8, caption: "Fermentation: yeast converts glucose into ethanol and carbon dioxide" });
+
+  // ---------- Interactive: polymer builder ----------
+  DEMOS.polymer = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 300);
+    // [name, monomer, polymer, substituent on second C (top), all-X?, uses, type]
+    const M = [["ethene", "poly(ethene)", ["H", "H", "H", "H"], "plastic bags, bottles, cling film"], ["propene", "poly(propene)", ["H", "H", "H", "CH₃"], "ropes, crates, carpets"], ["chloroethene", "poly(chloroethene) (PVC)", ["H", "H", "H", "Cl"], "window frames, pipes, cable insulation"], ["tetrafluoroethene", "poly(tetrafluoroethene) (PTFE)", ["F", "F", "F", "F"], "non-stick pans"], ["nylon (S)", "nylon: a polyamide", null, "clothing, ropes, fishing line"], ["PET (S)", "PET: a polyester", null, "drinks bottles, polyester fabric"]];
+    let m = 0, t0 = performance.now() / 1000;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = M.map(([n], i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; m = +b.dataset.i; t0 = performance.now() / 1000; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    const bar = document.createElement("div"); bar.style.cssText = "display:flex;gap:8px;margin-top:10px"; bar.innerHTML = `<button class="btn small">Replay</button>`; bar.onclick = () => t0 = performance.now() / 1000;
+    root.appendChild(segEl); root.appendChild(bar); const out = readout(root); let last = "";
+    return loop((tt) => {
+      size(); const w = W(), h = H(), k = clamp((tt - t0 - .6) / 2.2); ctx.clearRect(0, 0, w, h);
+      const ln = (x1, y1, x2, y2, dbl) => { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; if (!dbl) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); return; } ctx.beginPath(); ctx.moveTo(x1, y1 - 3); ctx.lineTo(x2, y2 - 3); ctx.moveTo(x1, y1 + 3); ctx.lineTo(x2, y2 + 3); ctx.stroke(); };
+      const at = (x, y, l, c) => text(ctx, l, x, y + 5, { size: 14, align: "center", weight: 700, color: c || css("--ink") });
+      const [nm, pn, sub, use] = M[m];
+      if (sub) {
+        const n = 3, unit = Math.min(130, (w - 60) / n), y = h / 2 + 10, x0 = w / 2 - (n * unit) / 2 + unit / 2;
+        for (let i = 0; i < n; i++) { const cx = x0 + i * unit, sep = (1 - k) * 22, c1 = cx - 22, c2 = cx + 22;
+          ln(c1 + 10, y, c2 - 10, y, k < .5); at(c1, y, "C", col); at(c2, y, "C", col);
+          [[c1, -1, sub[0]], [c1, 1, sub[1]], [c2, 1, sub[2]], [c2, -1, sub[3]]].forEach(([x, d, l]) => { ln(x, y + d * 10, x, y + d * 32); at(x, y + d * 44, l, l === "Cl" ? "#7a9a1e" : l === "F" ? "#4fb0c6" : l === "CH₃" ? css("--muted") : null); });
+          if (k > .5 && i < n - 1) { ln(c2 + 10, y, c2 + unit - 44 - 10 + sep, y); }
+        }
+        if (k > .5) { ctx.globalAlpha = Math.min(1, (k - .5) * 2); ln(x0 - 22 - 10, y, x0 - 60, y); ln(x0 + (n - 1) * unit + 32, y, x0 + (n - 1) * unit + 60, y); text(ctx, "…", x0 - 74, y + 5, { size: 18 }); text(ctx, "…", x0 + (n - 1) * unit + 66, y + 5, { size: 18 }); ctx.globalAlpha = 1; }
+        // repeat-unit brackets on the middle unit
+        if (k > .95) { const cx = x0 + unit, bx1 = cx - 44, bx2 = cx + 44; ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx1 + 8, y - 56); ctx.lineTo(bx1, y - 56); ctx.lineTo(bx1, y + 56); ctx.lineTo(bx1 + 8, y + 56); ctx.moveTo(bx2 - 8, y - 56); ctx.lineTo(bx2, y - 56); ctx.lineTo(bx2, y + 56); ctx.lineTo(bx2 - 8, y + 56); ctx.stroke(); text(ctx, "n", bx2 + 6, y + 60, { size: 14, weight: 700, color: css("--bad") }); text(ctx, "repeat unit", cx, y - 66, { size: 12, align: "center", color: css("--bad"), weight: 600 }); }
+        text(ctx, k < .5 ? `${n} ${nm} monomers (C=C)` : `${pn}: double bonds open and join`, 16, 24, { size: 13, weight: 700 });
+        const msg = `<b>Addition polymerisation.</b> Many ${nm} molecules join; the C=C double bond in each monomer opens to form single bonds to its neighbours. Only one product: the polymer. <b>${pn}</b> is used for ${use}. To find the monomer from a polymer, take the repeat unit and put a C=C between the two carbons.`;
+        if (msg !== last) { out.innerHTML = msg; last = msg; }
+      } else {
+        const nylon = m === 4, y = h / 2, bw = Math.min(110, (w - 80) / 4), x0 = w / 2 - 2 * bw;
+        for (let i = 0; i < 4; i++) { const acidM = i % 2 === 0, x = x0 + i * bw + (1 - k) * (i - 1.5) * 18, c = acidM ? css("--bad") : nylon ? css("--maths") : css("--physics");
+          ctx.fillStyle = c + "33"; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x + 14, y - 16, bw - 28, 32, 8); ctx.fill(); ctx.stroke();
+          text(ctx, acidM ? "dicarboxylic acid" : nylon ? "diamine" : "diol", x + bw / 2, y + 4, { size: 11, align: "center", weight: 600 });
+          text(ctx, acidM ? "HOOC" : nylon ? "H₂N" : "HO", x + 14, y - 22, { size: 11, color: c, weight: 700 }); text(ctx, acidM ? "COOH" : nylon ? "NH₂" : "OH", x + bw - 14, y - 22, { size: 11, color: c, weight: 700, align: "right" });
+          if (i < 3 && k > .4) { ctx.globalAlpha = Math.min(1, (k - .4) * 2.5); text(ctx, nylon ? "–CONH–" : "–COO–", x + bw, y + 34, { size: 12, align: "center", weight: 700, color: col }); ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(x + bw - 14, y); ctx.lineTo(x + bw + 14, y); ctx.stroke(); ctx.globalAlpha = 1; }
+          if (i < 3 && k > .3) { const f = clamp((k - .3) * 2), wx = x + bw, wy = y - 40 - f * 60; ctx.globalAlpha = 1 - f * .4; dot(ctx, wx, wy, 13, css("--maths")); text(ctx, "H₂O", wx, wy + 4, { size: 10, align: "center", color: "#fff", weight: 700 }); ctx.globalAlpha = 1; }
+        }
+        text(ctx, nylon ? "Nylon: amide links –CONH–" : "PET: ester links –COO–", 16, 24, { size: 13, weight: 700 }); text(ctx, "a small molecule (water) is lost at every link", 16, h - 14, { size: 12, color: css("--muted") });
+        const msg = `<b>Condensation polymerisation (S).</b> Two different monomers, each with <b>two</b> functional groups, join alternately; a molecule of <b>water</b> is eliminated at every link. ${nylon ? "<b>Nylon</b> is a <b>polyamide</b> made from a dicarboxylic acid and a diamine; the link is the amide link –CONH–." : "<b>PET</b> is a <b>polyester</b> made from a dicarboxylic acid and a diol; the link is the ester link –COO–. PET can be converted back to its monomers and re-polymerised (recycling)."} Used for ${use}.`;
+        if (msg !== last) { out.innerHTML = msg; last = msg; }
+      }
+    });
+  };
+
   V._chem = { rnd, bounce };
 })();
