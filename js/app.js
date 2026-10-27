@@ -1,9 +1,14 @@
 (() => {
   const SUBJECTS = {
-    maths: { name: "Mathematics", code: "0580", color: "var(--maths)", sub: "Algebra, geometry and graphs: the language the other two subjects are written in." },
-    physics: { name: "Physics", code: "0625", color: "var(--physics)", sub: "Forces, energy and waves: how the universe moves." },
-    chemistry: { name: "Chemistry", code: "0620", color: "var(--chem)", sub: "Atoms, bonds and reactions: what everything is made of." }
+    maths: { name: "Mathematics", code: "0580", color: "var(--maths)", sub: "Algebra, geometry and graphs: the language the other two subjects are written in.",
+      units: [[1, "Number"], [2, "Algebra and graphs"], [3, "Coordinate geometry"], [4, "Geometry"], [5, "Mensuration"], [6, "Trigonometry"], [7, "Transformations and vectors"], [8, "Probability"], [9, "Statistics"]] },
+    physics: { name: "Physics", code: "0625", color: "var(--physics)", sub: "Forces, energy and waves: how the universe moves.",
+      units: [[1, "Motion, forces and energy"], [2, "Thermal physics"], [3, "Waves"], [4, "Electricity and magnetism"], [5, "Nuclear physics"], [6, "Space physics"]] },
+    chemistry: { name: "Chemistry", code: "0620", color: "var(--chem)", sub: "Atoms, bonds and reactions: what everything is made of.",
+      units: [[1, "States of matter"], [2, "Atoms, elements and compounds"], [3, "Stoichiometry"], [4, "Electrochemistry"], [5, "Chemical energetics"], [6, "Chemical reactions"], [7, "Acids, bases and salts"], [8, "The Periodic Table"], [9, "Metals"], [10, "Chemistry of the environment"], [11, "Organic chemistry"], [12, "Experimental techniques and chemical analysis"]] }
   };
+  // keep topics in syllabus order: subject, then unit, then load order
+  { const ord = Object.keys(SUBJECTS); TOPICS.forEach((t, i) => t._i = i); TOPICS.sort((a, b) => ord.indexOf(a.subject) - ord.indexOf(b.subject) || (a.unit || 99) - (b.unit || 99) || a._i - b._i); }
   const app = document.getElementById("app");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let cleanup = [];
@@ -137,8 +142,9 @@
       ${Object.entries(SUBJECTS).map(([k, s]) => `
       <section class="subject" data-subject="${k}" style="--c:${s.color}">
         <div class="subject-head reveal"><span class="code">${s.code}</span><h2>${s.name}</h2><p class="sub">${s.sub}</p></div>
+        ${s.units.filter(([n]) => TOPICS.some(t => t.subject === k && t.unit === n)).map(([n, uname]) => `<h3 class="unit-h"><b>Unit ${n}</b>${uname}</h3>
         <div class="grid">
-          ${TOPICS.filter(t => t.subject === k).map((t, i) => {
+          ${TOPICS.filter(t => t.subject === k && t.unit === n).map((t) => { const i = TOPICS.filter(x => x.subject === k).indexOf(t);
             const tp = p[t.id] || {}, pct = (tp.read ? .5 : 0) + (tp.best != null ? tp.best * .5 : 0);
             return `<a class="card tilt reveal" href="#/topic/${t.id}" style="--c:${s.color}">
               <div class="card-top"><span class="num">${String(i + 1).padStart(2, "0")}</span>${ring(pct, s.color)}</div>
@@ -146,7 +152,7 @@
               <div class="tags"><span class="tag">${t.level}</span><span class="tag">${t.quiz.length} questions</span><span class="tag">${t.cards.length} cards</span>${tp.best != null ? `<span class="tag done">Best ${Math.round(tp.best * 100)}%</span>` : ""}</div>
               <span class="go" aria-hidden="true">→</span></a>`;
           }).join("")}
-        </div>
+        </div>`).join("")}
       </section>`).join("")}
     </div>`);
     swap(v);
@@ -213,7 +219,7 @@
     });
     if (t.demo && DEMOS[t.demo]) cleanup.push(DEMOS[t.demo](v.querySelector("#demo-root"), getComputedStyle(document.documentElement).getPropertyValue(t.subject === "maths" ? "--maths" : t.subject === "physics" ? "--physics" : "--chem").trim()));
     v.querySelectorAll(".viz[data-viz]").forEach(h => VIZ[h.dataset.viz] && cleanup.push(VIZ[h.dataset.viz](h)));
-    quiz(v.querySelector("#quiz"), t);
+    quiz(v.querySelector("#quiz"), { qs: t.quiz, id: t.id, title: t.title });
     if (t.syllabus) {
       const ticks = store.get("syl", {}), boxes = [...v.querySelectorAll(".syl input")];
       const upd = () => { const n = boxes.filter(b => b.checked).length; v.querySelector(".syl-count").textContent = `${n} / ${boxes.length} mastered`; v.querySelector(".syl-head .progress div").style.width = (n / boxes.length * 100) + "%"; };
@@ -237,31 +243,47 @@
     cleanup.push(() => removeEventListener("scroll", onScroll));
   }
 
-  function quiz(root, t, filter = "all") {
-    const qs = t.quiz.filter(q => filter === "all" || q.type === filter);
+  // ---------- question sets ----------
+  // opts: { qs, id (progress key or null), diff (show difficulty filter), tag (show source topic), timer (seconds), title }
+  const DIFF = { 1: "Easy", 2: "Medium", 3: "Hard" };
+  const diffOf = (q) => q.d || (q.marks <= 1 ? 1 : q.marks <= 3 ? 2 : 3);
+  function quiz(root, o, st = { type: "all", diff: "all" }) {
+    const pool = o.qs, match = (q, s) => (s.type === "all" || q.type === s.type) && (s.diff === "all" || diffOf(q) === +s.diff);
+    const qs = pool.filter(q => match(q, st));
     let score = 0, answered = 0; const max = qs.reduce((s, q) => s + q.marks, 0);
-    const count = (ty) => t.quiz.filter(q => ty === "all" || q.type === ty).length;
-    const tabs = el(`<div class="filters quiz-filters" role="group" aria-label="Question type">${[["all", "All"], ["mcq", "Multiple choice"], ["struct", "Written"]].map(([k, l]) => `<button class="chip" aria-pressed="${k === filter}" data-qf="${k}">${l} <span class="n">${count(k)}</span></button>`).join("")}</div>`);
-    tabs.onclick = (e) => { const b = e.target.closest("[data-qf]"); if (!b || b.dataset.qf === filter) return; root.innerHTML = ""; quiz(root, t, b.dataset.qf); math(root); };
-    root.appendChild(tabs);
-    const head = el(`<div class="scorebar"><div class="progress"><div style="width:0"></div></div><b class="score">0 / ${max}</b></div>`);
+    const again = (s) => { root.innerHTML = ""; quiz(root, o, s); math(root); };
+    const chips = (key, items) => items.map(([k, l]) => `<button class="chip" aria-pressed="${st[key] === k}" data-${key}="${k}">${l} <span class="n">${pool.filter(q => match(q, { ...st, [key]: k })).length}</span></button>`).join("");
+    if (!o.paper) {
+      const tabs = el(`<div class="quiz-filters"><div class="filters" role="group" aria-label="Question type">${chips("type", [["all", "All"], ["mcq", "Multiple choice"], ["struct", "Written"]])}</div>
+        ${o.diff ? `<div class="filters" role="group" aria-label="Difficulty">${chips("diff", [["all", "Any difficulty"], ["1", "Easy"], ["2", "Medium"], ["3", "Hard"]])}</div>` : ""}</div>`);
+      tabs.onclick = (e) => { const b = e.target.closest("[data-type],[data-diff]"); if (!b) return; const k = b.dataset.type ? "type" : "diff", v = b.dataset[k]; if (st[k] === v) return; again({ ...st, [k]: v }); };
+      root.appendChild(tabs);
+    }
+    const head = el(`<div class="scorebar"><div class="progress"><div style="width:0"></div></div><b class="score">0 / ${max}</b>${o.timer ? `<b class="timer" aria-live="off"></b>` : ""}</div>`);
     root.appendChild(head);
+    if (o.timer) {
+      const end = Date.now() + o.timer * 1000, tEl = head.querySelector(".timer");
+      const tick = () => { const s = Math.max(0, Math.round((end - Date.now()) / 1000)); tEl.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; tEl.classList.toggle("late", s < 60); if (s === 0) clearInterval(iv); };
+      const iv = setInterval(tick, 1000); tick(); cleanup.push(() => clearInterval(iv));
+    }
+    if (!qs.length) root.appendChild(el(`<p class="muted">No questions match these filters yet.</p>`));
     const update = () => {
-      head.querySelector(".progress div").style.width = (score / max * 100) + "%";
+      head.querySelector(".progress div").style.width = (max ? score / max * 100 : 0) + "%";
       head.querySelector(".score").textContent = `${score} / ${max}`;
-      if (answered === qs.length) {
-        if (filter === "all") saveProgress(t.id, { best: Math.max(progress()[t.id]?.best ?? 0, score / max) });
+      if (answered === qs.length && qs.length) {
+        if (o.id && st.type === "all" && st.diff === "all") saveProgress(o.id, { best: Math.max(progress()[o.id]?.best ?? 0, score / max) });
         const pct = score / max, msg = pct >= .9 ? "A* territory. Try teaching it to someone to make it permanent." : pct >= .7 ? "Solid. Re-read the parts you dropped marks on, then retry." : "Go back through the lesson sections and worked examples, then have another go. That loop is how the grade moves.";
         const done = el(`<div class="result"><b>${Math.round(pct * 100)}%</b><span>${msg}</span><button class="btn small">Retry</button></div>`);
-        done.querySelector("button").onclick = () => { root.innerHTML = ""; quiz(root, t, filter); math(root); };
+        done.querySelector("button").onclick = () => o.retry ? o.retry() : again(st);
         root.appendChild(done);
         if (pct >= .9) { const r = done.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top, getComputedStyle(root).getPropertyValue("--c")); }
       }
     };
     qs.forEach((q, qi) => {
-      const card = el(`<div class="qcard"><span class="marks">[${q.marks} mark${q.marks > 1 ? "s" : ""}]</span><p class="qtext"><b>Q${qi + 1}.</b> ${q.q}</p></div>`);
+      const dq = diffOf(q), src = q._t;
+      const card = el(`<div class="qcard"><div class="qmeta">${o.diff ? `<span class="diff d${dq}">${DIFF[dq]}</span>` : ""}${o.tag && src ? `<a class="qsrc" href="#/topic/${src.id}">${src.title}</a>` : ""}<span class="marks">[${q.marks} mark${q.marks > 1 ? "s" : ""}]</span></div><p class="qtext"><b>Q${qi + 1}.</b> ${q.q}</p></div>`);
       if (q.type === "mcq") {
-        const opts = el(`<div class="opts">${q.opts.map((o, i) => `<button class="opt"><span class="letter">${"ABCD"[i]}</span><span>${o}</span></button>`).join("")}</div>`);
+        const opts = el(`<div class="opts">${q.opts.map((op, i) => `<button class="opt"><span class="letter">${"ABCD"[i]}</span><span>${op}</span></button>`).join("")}</div>`);
         card.appendChild(opts);
         opts.querySelectorAll(".opt").forEach((b, i) => b.onclick = (e) => {
           opts.querySelectorAll(".opt").forEach((x, j) => { x.disabled = true; if (j === q.ans) x.classList.add("right"); });
@@ -282,13 +304,60 @@
             score += +b.dataset.m; answered++; update();
           });
         };
-        AI.attachMarker(card, q, t.title, box.querySelector("textarea"), (aw) => {
+        AI.attachMarker(card, q, (src || o).title, box.querySelector("textarea"), (aw) => {
           if (revealBtn.isConnected) revealBtn.click();
           const chip = box.querySelector(`.ms [data-m="${aw}"]`); if (chip && !chip.disabled) chip.click();
         }, math);
       }
       root.appendChild(card);
     });
+  }
+
+  // ---------- exam questions by unit ----------
+  const unitTopics = (subj, u) => TOPICS.filter(t => t.subject === subj && t.unit === u);
+  const unitQs = (subj, u) => unitTopics(subj, u).flatMap(t => [...(t.exam || []), ...t.quiz].map(q => ({ ...q, _t: t })))
+    .sort((a, b) => diffOf(a) - diffOf(b));
+  function examHome(subj) {
+    subj = SUBJECTS[subj] ? subj : "physics";
+    const s = SUBJECTS[subj], p = progress();
+    const v = el(`<div style="--c:${s.color}"><div class="page-head"><span class="code">Exam practice</span><h1>Exam questions</h1>
+      <p>Every question for a whole syllabus unit in one place, from easy one-markers to hard multi-step problems. Filter by difficulty, get AI marking on written answers, or sit a timed practice paper.</p></div>
+      <div class="filters" role="group" aria-label="Subject">${Object.entries(SUBJECTS).map(([k, x]) => `<button class="chip" aria-pressed="${k === subj}" data-s="${k}" style="--c:${x.color}"><i class="sw"></i>${x.name}</button>`).join("")}</div>
+      <div class="units">${s.units.map(([n, name]) => {
+        const qs = unitQs(subj, n), ts = unitTopics(subj, n), c = [1, 2, 3].map(d => qs.filter(q => diffOf(q) === d).length), best = p["exam:" + subj + n]?.best;
+        return qs.length ? `<a class="unit-card reveal" href="#/exam/${subj}/${n}"><span class="code">Unit ${n}</span><h3>${name}</h3>
+          <p class="muted">${ts.map(t => t.title).join(" · ")}</p>
+          <div class="dbar" aria-label="${c[0]} easy, ${c[1]} medium, ${c[2]} hard">${c.map((k, i) => `<i class="d${i + 1}" style="flex:${k}"></i>`).join("")}</div>
+          <div class="tags"><span class="tag">${qs.length} questions</span><span class="tag">${c[0]} easy · ${c[1]} medium · ${c[2]} hard</span>${best != null ? `<span class="tag done">Best paper ${Math.round(best * 100)}%</span>` : ""}</div><span class="go" aria-hidden="true">→</span></a>`
+          : `<div class="unit-card soon"><span class="code">Unit ${n}</span><h3>${name}</h3><p class="muted">Coming soon</p></div>`;
+      }).join("")}</div></div>`);
+    swap(v);
+    v.querySelector(".filters").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) location.hash = "#/exam/" + b.dataset.s; };
+    reveal(v); tilt(v);
+  }
+  function examUnit(subj, n) {
+    const s = SUBJECTS[subj], u = s && s.units.find(x => x[0] === +n); if (!u) return examHome(subj);
+    const qs = unitQs(subj, u[0]);
+    const v = el(`<div style="--c:${s.color}">
+      <div class="page-head"><div class="crumbs"><a href="#/exam/${subj}">Exam questions</a> <span>/</span> ${s.name}</div><span class="code">${s.code} · Unit ${u[0]}</span><h1>${u[1]}</h1>
+        <p>${qs.length} questions from ${unitTopics(subj, u[0]).map(t => `<a href="#/topic/${t.id}">${t.title}</a>`).join(", ")}. Easy first, hard last.</p></div>
+      <div class="paper-cta"><div><b>Timed practice paper</b><span>A random mix of about 40 marks, easy to hard, with 1 minute per mark, like the real exam.</span></div><button class="btn" data-paper>Start a paper</button></div>
+      <div id="xq"></div></div>`);
+    swap(v);
+    const root = v.querySelector("#xq");
+    const bank = () => { root.innerHTML = ""; quiz(root, { qs, diff: true, tag: true }); math(root); };
+    const paper = () => {
+      const pick = [], by = [1, 2, 3].map(d => qs.filter(q => diffOf(q) === d).sort(() => Math.random() - .5));
+      let marks = 0, k = 0; const want = [14, 16, 12];
+      by.forEach((list, d) => { let m = 0; for (const q of list) { if (m >= want[d]) break; pick.push(q); m += q.marks; } marks += m; });
+      pick.sort((a, b) => diffOf(a) - diffOf(b));
+      root.innerHTML = ""; const bar = el(`<div class="paper-head"><b>Practice paper · ${pick.reduce((t, q) => t + q.marks, 0)} marks</b><button class="btn ghost small">Back to all questions</button></div>`);
+      bar.querySelector("button").onclick = bank; root.appendChild(bar);
+      quiz(root, { qs: pick, diff: true, tag: true, paper: true, id: "exam:" + subj + u[0], timer: pick.reduce((t, q) => t + q.marks, 0) * 60, retry: paper }); math(root);
+      root.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
+    };
+    v.querySelector("[data-paper]").onclick = paper;
+    bank();
   }
 
   function flashcards(root, deck) {
@@ -370,7 +439,7 @@
     if (!h.startsWith("#/")) return; // in-page anchors
     const [, page, id] = h.slice(1).split("/");
     document.querySelectorAll("#tabs [data-go]").forEach(b => b.setAttribute("aria-current", b.dataset.go === (page ? "#/" + page : "#/") ? "page" : "false"));
-    if (page === "topic") lesson(id); else if (page === "cards") cardsPage(); else if (page === "formulas") formulasPage(); else if (page === "ask") AI.page(app, { el, math, swap }); else home();
+    if (page === "topic") lesson(id); else if (page === "cards") cardsPage(); else if (page === "formulas") formulasPage(); else if (page === "ask") AI.page(app, { el, math, swap }); else if (page === "exam") (id && h.split("/")[3] ? examUnit(id, h.split("/")[3]) : examHome(id)); else home();
     window.scrollTo({ top: 0 });
   }
   document.getElementById("tabs").onclick = (e) => { const b = e.target.closest("[data-go]"); if (b) location.hash = b.dataset.go; };

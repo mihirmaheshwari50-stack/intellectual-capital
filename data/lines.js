@@ -10,7 +10,7 @@ const grid = (o) => F.plot(Object.assign({ w: 420, h: 340, x: [-5, 5], y: [-4, 6
    STRAIGHT-LINE GRAPHS  (0580: E3.1–E3.7, E2.6 regions, E2.9)
    ============================================================ */
 TOPICS.push({
-  id: "lines", subject: "maths", title: "Straight-line graphs",
+  id: "lines", subject: "maths", unit: 3, title: "Straight-line graphs",
   blurb: "Gradient, y = mx + c, parallel and perpendicular lines, midpoint, length, regions and real-life graphs.",
   level: "Core → Extended", demo: "line",
   syllabus: [

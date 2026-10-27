@@ -28,7 +28,7 @@ const rootsRow = () => F.row(
    QUADRATICS  (0580 2025–2027: E2.2, E2.3, E2.5, E2.10, E2.11)
    ============================================================ */
 TOPICS.push({
-  id: "quadratics", subject: "maths", title: "Quadratics",
+  id: "quadratics", subject: "maths", unit: 2, title: "Quadratics",
   blurb: "Expanding, factorising, the formula, completing the square, graphs and simultaneous equations.",
   level: "Core → Extended", demo: "quadratic",
   syllabus: [

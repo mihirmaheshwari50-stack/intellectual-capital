@@ -24,7 +24,7 @@ const sinPlot = (o = {}) => F.plot(Object.assign({ w: 520, h: 230, x: [0, 380], 
    TRIGONOMETRY  (0580: E6.1–E6.6, E4.3 bearings)
    ============================================================ */
 TOPICS.push({
-  id: "trig", subject: "maths", title: "Trigonometry",
+  id: "trig", subject: "maths", unit: 6, title: "Trigonometry",
   blurb: "Pythagoras, SOH CAH TOA, exact values, trig graphs, sine and cosine rules, bearings and 3D.",
   level: "Core → Extended", demo: "trig",
   syllabus: [

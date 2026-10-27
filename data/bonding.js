@@ -32,7 +32,7 @@ const pa = (x, y, c = "b", r = 9) => F.circ(x, y, r, c + "S " + c);
    ATOMS, BONDING & STRUCTURE  (0620: 2.1–2.7)
    ============================================================ */
 TOPICS.push({
-  id: "bonding", subject: "chemistry", title: "Atoms, bonding & structure",
+  id: "bonding", subject: "chemistry", unit: 2, title: "Atoms, bonding & structure",
   blurb: "Atomic structure, isotopes, ionic, covalent and metallic bonding, giant structures, and why properties follow from structure.",
   level: "Core → Supplement", demo: "atom",
   syllabus: [

@@ -15,7 +15,7 @@ const h2o = (x, y) => ball(x, y, "O") + ball(x - 16, y + 12, "H") + ball(x + 16,
    STOICHIOMETRY  (0620 2026–2028: 3.1, 3.2, 3.3)
    ============================================================ */
 TOPICS.push({
-  id: "moles", subject: "chemistry", title: "Stoichiometry & the mole",
+  id: "moles", subject: "chemistry", unit: 3, title: "Stoichiometry & the mole",
   blurb: "Formulae, equations, relative masses, the mole, reacting masses, gas volumes, concentration, titrations, limiting reagents, yield and purity.",
   level: "Core → Supplement", demo: "mole",
   syllabus: [

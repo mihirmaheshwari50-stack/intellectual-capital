@@ -15,7 +15,7 @@ const profile = (o) => F.plot(Object.assign({ w: 460, h: 300, x: [0, 10], y: [0,
    RATES OF REACTION  (0620: 6.2, with Ea from 5.1)
    ============================================================ */
 TOPICS.push({
-  id: "rates", subject: "chemistry", title: "Rates of reaction",
+  id: "rates", subject: "chemistry", unit: 6, title: "Rates of reaction",
   blurb: "Measuring rate, reading rate graphs, collision theory, concentration, pressure, surface area, temperature, catalysts and enzymes.",
   level: "Core → Supplement", demo: "rates",
   syllabus: [

@@ -35,7 +35,7 @@ const tilted = (deg, cogInside, cap) => {
    FORCES  (0625 2026–2028: 1.2 free fall, 1.3, 1.5.1–1.5.3, 1.6)
    ============================================================ */
 TOPICS.push({
-  id: "forces", subject: "physics", title: "Forces, moments & momentum",
+  id: "forces", subject: "physics", unit: 1, title: "Forces, moments & momentum",
   blurb: "Resultant force, Hooke's law, mass and weight, F = ma, terminal velocity, circular motion, moments, centre of gravity, momentum.",
   level: "Core → Supplement", demo: "forces",
   syllabus: [

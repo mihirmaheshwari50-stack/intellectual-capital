@@ -14,7 +14,7 @@ const ray = (x1, y1, x2, y2, c = "o thick") => F.arrow(x1, y1, (x1 + x2) / 2, (y
    WAVES, LIGHT & SOUND  (0625: 3.1, 3.2.1, 3.2.2, 3.2.4, 3.3, 3.4)
    ============================================================ */
 TOPICS.push({
-  id: "waves", subject: "physics", title: "Waves, light & sound",
+  id: "waves", subject: "physics", unit: 3, title: "Waves, light & sound",
   blurb: "Wave properties, v = fλ, reflection, refraction, total internal reflection, dispersion, the EM spectrum, communication and sound.",
   level: "Core → Supplement", demo: "wave",
   syllabus: [

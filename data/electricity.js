@@ -12,7 +12,7 @@ const iv = (f, title, note, c) => F.plot({ w: 260, h: 230, x: [-6, 6], y: [-1.6,
    ELECTRICITY  (0625: 4.2.1–4.2.5, 4.3.1–4.3.3, 4.4)
    ============================================================ */
 TOPICS.push({
-  id: "electricity", subject: "physics", title: "Electricity & circuits",
+  id: "electricity", subject: "physics", unit: 4, title: "Electricity & circuits",
   blurb: "Charge, fields, current, e.m.f., p.d., resistance, I–V graphs, series and parallel, potential dividers, power and safety.",
   level: "Core → Supplement", demo: "circuit",
   syllabus: [
