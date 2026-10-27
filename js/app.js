@@ -272,8 +272,9 @@
       } else {
         const box = el(`<div><textarea placeholder="Write your full answer here, showing working, before checking…" aria-label="Your answer"></textarea><button class="btn small">Reveal mark scheme</button></div>`);
         card.appendChild(box);
-        box.querySelector("button").onclick = () => {
-          box.querySelector("button").remove();
+        const revealBtn = box.querySelector("button");
+        revealBtn.onclick = () => {
+          revealBtn.remove();
           const ms = el(`<div class="ms"><b class="t">Mark scheme</b><div>${q.ms}</div><div class="self"><span>Marks you earned:</span>${Array.from({ length: q.marks + 1 }, (_, i) => `<button class="chip" data-m="${i}">${i}</button>`).join("")}</div></div>`);
           box.appendChild(ms); math(ms);
           ms.querySelectorAll("[data-m]").forEach(b => b.onclick = () => {
@@ -281,6 +282,10 @@
             score += +b.dataset.m; answered++; update();
           });
         };
+        AI.attachMarker(card, q, t.title, box.querySelector("textarea"), (aw) => {
+          if (revealBtn.isConnected) revealBtn.click();
+          const chip = box.querySelector(`.ms [data-m="${aw}"]`); if (chip && !chip.disabled) chip.click();
+        }, math);
       }
       root.appendChild(card);
     });
@@ -365,7 +370,7 @@
     if (!h.startsWith("#/")) return; // in-page anchors
     const [, page, id] = h.slice(1).split("/");
     document.querySelectorAll("#tabs [data-go]").forEach(b => b.setAttribute("aria-current", b.dataset.go === (page ? "#/" + page : "#/") ? "page" : "false"));
-    if (page === "topic") lesson(id); else if (page === "cards") cardsPage(); else if (page === "formulas") formulasPage(); else home();
+    if (page === "topic") lesson(id); else if (page === "cards") cardsPage(); else if (page === "formulas") formulasPage(); else if (page === "ask") AI.page(app, { el, math, swap }); else home();
     window.scrollTo({ top: 0 });
   }
   document.getElementById("tabs").onclick = (e) => { const b = e.target.closest("[data-go]"); if (b) location.hash = b.dataset.go; };
