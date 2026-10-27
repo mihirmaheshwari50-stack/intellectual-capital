@@ -391,5 +391,6 @@ window.DEMOS = (() => {
     });
   };
 
+  D._lib = { setup, controls, readout, loop, typeset, fix, css, dot, reduced };
   return D;
 })();

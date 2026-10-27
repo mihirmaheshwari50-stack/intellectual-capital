@@ -449,5 +449,6 @@ window.VIZ = (() => {
     text(ctx, "● positive test charge follows the field", W - 14, 22, { size: 12, align: "right", color: cs("--good"), weight: 600 });
   }, { h: 280, period: 10, caption: "Field direction = the way a positive charge would be pushed" });
 
+  V._lib = { mount, text, arrow, dot, alpha, seg, cs, clamp, ease, reduced };
   return V;
 })();
