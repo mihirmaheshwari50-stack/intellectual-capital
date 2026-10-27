@@ -553,5 +553,62 @@
     });
   };
 
+  // ---------- Prism as a stack of the cross-section ----------
+  V.prismVolume = (host) => mount(host, (ctx, W, H, t, P) => {
+    const k = clamp(t / (P * .8)), cx = W * .3, cy = H * .5, s = 70, depth = 160 * k;
+    const tri = [[cx, cy - s * .7], [cx - s * .6, cy + s * .5], [cx + s * .6, cy + s * .5]];
+    const n = Math.max(1, Math.floor(k * 12));
+    for (let i = n; i >= 0; i--) { const dx = i / 12 * depth * .6, dy = -i / 12 * depth * .35; ctx.fillStyle = `hsla(${200},50%,${60 - i}%,${i === 0 ? .9 : .5})`; ctx.strokeStyle = cs("--ink"); ctx.lineWidth = i === 0 ? 2 : .6; ctx.beginPath(); tri.forEach(([x, y], j) => j ? ctx.lineTo(x + dx, y + dy) : ctx.moveTo(x + dx, y + dy)); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    text(ctx, "cross-section (area A)", cx, cy + s * .5 + 24, { size: 12, align: "center" });
+    text(ctx, "length L", cx + depth * .6 * .55, cy - s * .7 - depth * .35 * .55 - 10, { size: 12, align: "center", color: cs("--bad") });
+    text(ctx, "Volume = A × L", W * .72, H / 2, { size: 18, align: "center", weight: 700, color: cs("--maths") });
+    text(ctx, "Surface area = 2A + (perimeter of A) × L", W * .72, H / 2 + 30, { size: 13, align: "center", color: cs("--muted") });
+  }, { h: 230, period: 7, caption: "A prism is a constant cross-section repeated along its length: volume = area × length" });
+
+  // ---------- Arc length and sector area as a fraction of the full circle ----------
+  V.sectorFraction = (host) => mount(host, (ctx, W, H, t, P) => {
+    const cx = W * .3, cy = H / 2, r = Math.min(100, H / 2 - 30), theta = 40 + 240 * (.5 - .5 * Math.cos(t / P * 2 * Math.PI));
+    ctx.strokeStyle = cs("--line"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+    ctx.fillStyle = cs("--maths") + "44"; ctx.strokeStyle = cs("--maths"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + theta * Math.PI / 180); ctx.closePath(); ctx.fill(); ctx.stroke();
+    text(ctx, Math.round(theta) + "°", cx + 18, cy - r * .4, { size: 14, weight: 700, color: cs("--maths") });
+    const frac = theta / 360;
+    text(ctx, `fraction of full turn = ${theta.toFixed(0)}/360 = ${frac.toFixed(3)}`, W * .64, H / 2 - 40, { size: 13, align: "center" });
+    text(ctx, `arc length = ${frac.toFixed(3)} × 2πr`, W * .64, H / 2 - 4, { size: 15, align: "center", weight: 700, color: cs("--maths") });
+    text(ctx, `sector area = ${frac.toFixed(3)} × πr²`, W * .64, H / 2 + 30, { size: 15, align: "center", weight: 700, color: cs("--chem") });
+  }, { h: 220, period: 8, caption: "A sector is a fraction θ/360 of the full circle, for both arc length and area" });
+
+  // ---------- Interactive: 3D shape volume/SA calculator ----------
+  DEMOS.solids = (root, col) => {
+    const { ctx, size, W, H } = setup(root, 280);
+    const SH = ["cuboid", "cylinder", "cone", "sphere", "pyramid (square base)"]; let si = 0;
+    const segEl = document.createElement("div"); segEl.className = "seg wrap"; segEl.style.marginTop = "12px"; segEl.innerHTML = SH.map((n, i) => `<button aria-pressed="${i === 0}" data-i="${i}">${n}</button>`).join("");
+    segEl.onclick = e => { const b = e.target.closest("button"); if (!b) return; si = +b.dataset.i; segEl.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    root.appendChild(segEl);
+    const v = DEMOS._lib.controls(root, [{ key: "a", label: "a (length / radius)", min: 1, max: 10, step: .5, value: 4 }, { key: "b", label: "b (width)", min: 1, max: 10, step: .5, value: 5 }, { key: "h", label: "h (height)", min: 1, max: 12, step: .5, value: 6 }]);
+    const out = readout(root); let last = "";
+    return loop(() => {
+      size(); const w = W(), h = H(); ctx.clearRect(0, 0, w, h);
+      const a = v.a, b = v.b, hh = v.h, pi = Math.PI;
+      const calc = [
+        () => ({ V: a * b * hh, S: 2 * (a * b + a * hh + b * hh), lab: ["a (length)", "b (width)", "h (height)"], vf: "V = a × b × h", sf: "S = 2(ab + ah + bh)" }),
+        () => ({ V: pi * a * a * hh, S: 2 * pi * a * a + 2 * pi * a * hh, lab: ["r (radius)", "—", "h (height)"], vf: "V = πr²h", sf: "S = 2πr² + 2πrh" }),
+        () => { const l = Math.hypot(a, hh); return { V: (1 / 3) * pi * a * a * hh, S: pi * a * a + pi * a * l, lab: ["r (radius)", "—", "h (height)"], vf: "V = ⅓πr²h", sf: "S = πr² + πrl  (l = slant height = " + l.toFixed(2) + ")" }; },
+        () => ({ V: (4 / 3) * pi * a ** 3, S: 4 * pi * a * a, lab: ["r (radius)", "—", "—"], vf: "V = 4/3 πr³", sf: "S = 4πr²" }),
+        () => { const l = Math.sqrt((a / 2) ** 2 + hh * hh); return { V: (1 / 3) * a * a * hh, S: a * a + 2 * a * l, lab: ["a (base side)", "—", "h (height)"], vf: "V = ⅓ × base area × h", sf: "S = base + 4 triangles (slant height = " + l.toFixed(2) + ")" }; }
+      ][si]();
+      const { V, S, lab, vf, sf } = calc;
+      // simple 2D representative icon
+      const cx = w * .22, cy = h * .55;
+      ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.fillStyle = col + "22";
+      if (si === 0) { ctx.beginPath(); ctx.rect(cx - 50, cy - 40, 100, 80); ctx.fill(); ctx.stroke(); }
+      else if (si === 1) { ctx.beginPath(); ctx.ellipse(cx, cy - 40, 45, 14, 0, 0, 7); ctx.moveTo(cx - 45, cy - 40); ctx.lineTo(cx - 45, cy + 40); ctx.ellipse(cx, cy + 40, 45, 14, 0, Math.PI, 0, true); ctx.lineTo(cx + 45, cy - 40); ctx.fill(); ctx.stroke(); }
+      else if (si === 2) { ctx.beginPath(); ctx.ellipse(cx, cy + 40, 45, 14, 0, 0, 7); ctx.moveTo(cx - 45, cy + 40); ctx.lineTo(cx, cy - 50); ctx.lineTo(cx + 45, cy + 40); ctx.fill(); ctx.stroke(); }
+      else if (si === 3) { ctx.beginPath(); ctx.arc(cx, cy, 48, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx, cy, 48, 14, 0, 0, Math.PI); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.moveTo(cx - 50, cy + 30); ctx.lineTo(cx + 10, cy + 45); ctx.lineTo(cx + 50, cy + 15); ctx.lineTo(cx - 10, cy + 2); ctx.closePath(); ctx.moveTo(cx - 10, cy + 2); ctx.lineTo(cx - 5, cy - 55); ctx.lineTo(cx + 10, cy + 45); ctx.moveTo(cx - 5, cy - 55); ctx.lineTo(cx - 50, cy + 30); ctx.moveTo(cx - 5, cy - 55); ctx.lineTo(cx + 50, cy + 15); ctx.fill(); ctx.stroke(); }
+      const msg = `<b>${SH[si]}</b>: ${vf} → <b>V = ${V.toFixed(2)}</b>. ${sf} → <b>S = ${S.toFixed(2)}</b>. (Using a=${a}, ${lab[1] !== "—" ? "b=" + b + ", " : ""}h=${hh}${si >= 3 && si !== 4 ? " not used" : ""})`;
+      if (msg !== last) { out.innerHTML = msg; last = msg; }
+    });
+  };
+
   V._maths = { factor, gcd, sup };
 })();
